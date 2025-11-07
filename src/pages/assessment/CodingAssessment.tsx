@@ -193,31 +193,6 @@ export default function CodingAssessmentPage() {
           </p>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Editor</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">Write a function solve(input) that returns the expected output.</p>
-          <CodeEditor
-            language={(assessment.coding.language || "javascript") === "javascript" ? "javascript" : "plaintext"}
-            value={assessment.coding.starterCode || ""}
-            onChange={(v) => update({ starterCode: v })}
-          />
-          <div className="flex gap-3">
-            <Button onClick={() => {
-              const results = run(false) || [];
-              alert(results.map(r => `${r.pass ? '✅' : '❌'} ${r.message}`).join('\n'));
-            }}>Run Code</Button>
-            <Button variant="secondary" onClick={() => {
-              const results = run(true) || [];
-              const pass = results.every(r => r.pass);
-              alert(`${pass ? 'All tests passed' : 'Some tests failed'}\n\n` + results.map(r => `${r.pass ? '✅' : '❌'} ${r.message}`).join('\n'));
-            }}>Submit</Button>
-          </div>
-        </CardContent>
-      </Card>
     </main>
   );
 }

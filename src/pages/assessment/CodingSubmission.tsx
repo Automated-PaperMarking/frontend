@@ -147,55 +147,6 @@ export default function CodingSubmissionPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Student Access</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2">
-            <Label>Enrollment Key</Label>
-            <div className="flex gap-2">
-              <Input 
-                value={assessment.coding.enrollmentKey || ""} 
-                readOnly 
-                className="font-mono"
-              />
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  navigator.clipboard.writeText(assessment.coding.enrollmentKey || "");
-                  toast.success("Enrollment key copied!");
-                }}
-              >
-                Copy
-              </Button>
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label>Student Registration Link</Label>
-            <div className="flex gap-2">
-              <Input 
-                value={`${window.location.origin}/student/register?projectId=${projectId}&assessmentId=${assessmentId}`}
-                readOnly 
-                className="text-sm"
-              />
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/student/register?projectId=${projectId}&assessmentId=${assessmentId}`);
-                  toast.success("Registration link copied!");
-                }}
-              >
-                Copy Link
-              </Button>
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Share this link with students to allow them to register and take the assessment.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle>Editor</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
