@@ -89,28 +89,21 @@ export default function CodingSubmissionPage() {
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label>Description</Label>
-            <Textarea value={assessment.coding.description || ""} onChange={(e) => update({ description: e.target.value })} />
+            <Textarea value={assessment.coding.description || ""} />
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label>Sample Input</Label>
-              <Textarea value={assessment.coding.sampleInput || ""} onChange={(e) => update({ sampleInput: e.target.value })} />
+              <Textarea value={assessment.coding.sampleInput || ""} />
             </div>
             <div className="grid gap-2">
               <Label>Sample Output</Label>
-              <Textarea value={assessment.coding.sampleOutput || ""} onChange={(e) => update({ sampleOutput: e.target.value })} />
+              <Textarea value={assessment.coding.sampleOutput || ""} />
             </div>
           </div>
           <div className="grid gap-2">
             <Label>Language</Label>
-            <select
-              className="border rounded-md h-9 px-3 bg-background"
-              value={assessment.coding.language || "javascript"}
-              onChange={(e) => update({ language: e.target.value as LanguageOption })}
-            >
-              <option value="javascript">JavaScript</option>
-              <option value="python">Python</option>
-            </select>
+            <Textarea value={assessment.coding.language || "javascript"} />
           </div>
         </CardContent>
       </Card>
@@ -126,7 +119,6 @@ export default function CodingSubmissionPage() {
               <Textarea placeholder="Expected Output" value={t.expectedOutput} onChange={(e) => updateTest(t.id, { expectedOutput: e.target.value })} />
             </div>
           ))}
-          <Button variant="secondary" onClick={() => addTest(false)}>Add Public Test</Button>
         </CardContent>
       </Card>
 
@@ -141,7 +133,6 @@ export default function CodingSubmissionPage() {
               <Textarea placeholder="Expected Output" value={t.expectedOutput} onChange={(e) => updateTest(t.id, { expectedOutput: e.target.value }, true)} />
             </div>
           ))}
-          <Button variant="secondary" onClick={() => addTest(true)}>Add Hidden Test</Button>
         </CardContent>
       </Card>
 
