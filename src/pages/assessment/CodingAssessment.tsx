@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import CodeEditor from "@/components/Editor";
 import { CodingAssessment, LanguageOption, TestCase } from "@/types";
 import { getAssessment, updateAssessment } from "@/utils/storage";
 
@@ -191,6 +190,19 @@ export default function CodingAssessmentPage() {
           <p className="text-sm text-muted-foreground">
             Share this link with students to allow them to register and take the assessment.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Publish</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">Publish the created Coding Assignment.</p>
+          <div className="flex gap-3">
+            <Button >Publish</Button>
+            <Button variant="secondary">Save as Draft</Button>
+          </div>
         </CardContent>
       </Card>
     </main>

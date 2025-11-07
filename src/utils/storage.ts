@@ -59,6 +59,7 @@ export function addAssessment(projectId: string, title: string, type: Assessment
     title,
     type,
     createdAt: new Date().toISOString(),
+    published: false,
   } as Assessment;
 
   let assessment: Assessment = base;
