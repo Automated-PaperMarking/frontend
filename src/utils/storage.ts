@@ -4,15 +4,19 @@ import { Project, Assessment, AssessmentType, CodingAssessment, EssayAssessment 
 const STORAGE_KEYS = {
   TOKEN: "ai-grade-token",
   PROJECTS: "ai-grade-projects",
+  ROLE: "ai-grade-role",
 } as const;
 
 export const auth = {
   isLoggedIn: () => Boolean(localStorage.getItem(STORAGE_KEYS.TOKEN)),
-  login: (email: string) => {
+  login: (email: string, role: "student" | "teacher") => {
     const fakeToken = `${email}-token-${Date.now()}`;
     localStorage.setItem(STORAGE_KEYS.TOKEN, fakeToken);
+    localStorage.setItem(STORAGE_KEYS.ROLE, role);
   },
   logout: () => localStorage.removeItem(STORAGE_KEYS.TOKEN),
+
+  getRole: () => localStorage.getItem(STORAGE_KEYS.ROLE) as "student" | "teacher" | null,
 };
 
 export function loadProjects(): Project[] {

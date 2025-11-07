@@ -25,7 +25,7 @@ function runJSUserCode(userCode: string, input: string): { ok: boolean; output: 
   }
 }
 
-export default function CodingAssessmentPage() {
+export default function CodingSubmissionPage() {
   const { id: projectId, assessmentId } = useParams();
   const [assessment, setAssessment] = useState<CodingAssessment | null>(null);
 
@@ -147,50 +147,26 @@ export default function CodingAssessmentPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Student Access</CardTitle>
+          <CardTitle>Editor</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2">
-            <Label>Enrollment Key</Label>
-            <div className="flex gap-2">
-              <Input 
-                value={assessment.coding.enrollmentKey || ""} 
-                readOnly 
-                className="font-mono"
-              />
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  navigator.clipboard.writeText(assessment.coding.enrollmentKey || "");
-                  toast.success("Enrollment key copied!");
-                }}
-              >
-                Copy
-              </Button>
-            </div>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">Write a function solve(input) that returns the expected output.</p>
+          <CodeEditor
+            language={(assessment.coding.language || "javascript") === "javascript" ? "javascript" : "plaintext"}
+            value={assessment.coding.starterCode || ""}
+            onChange={(v) => update({ starterCode: v })}
+          />
+          <div className="flex gap-3">
+            <Button onClick={() => {
+              const results = run(false) || [];
+              alert(results.map(r => `${r.pass ? '✅' : '❌'} ${r.message}`).join('\n'));
+            }}>Run Code</Button>
+            <Button variant="secondary" onClick={() => {
+              const results = run(true) || [];
+              const pass = results.every(r => r.pass);
+              alert(`${pass ? 'All tests passed' : 'Some tests failed'}\n\n` + results.map(r => `${r.pass ? '✅' : '❌'} ${r.message}`).join('\n'));
+            }}>Submit</Button>
           </div>
-          <div className="grid gap-2">
-            <Label>Student Registration Link</Label>
-            <div className="flex gap-2">
-              <Input 
-                value={`${window.location.origin}/student/register?projectId=${projectId}&assessmentId=${assessmentId}`}
-                readOnly 
-                className="text-sm"
-              />
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/student/register?projectId=${projectId}&assessmentId=${assessmentId}`);
-                  toast.success("Registration link copied!");
-                }}
-              >
-                Copy Link
-              </Button>
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Share this link with students to allow them to register and take the assessment.
-          </p>
         </CardContent>
       </Card>
     </main>
