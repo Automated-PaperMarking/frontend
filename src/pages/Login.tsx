@@ -16,7 +16,7 @@ export default function Login() {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    auth.login(email || "teacher@example.com");
+    auth.login(email || "teacher@example.com", isStudent ? "student" : "teacher");
     navigate("/dashboard");
   };
 
