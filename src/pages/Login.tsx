@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { auth } from "@/utils/storage";
-import { Switch } from "@/components/ui/switch"
 
 export default function Login() {
   const navigate = useNavigate();
@@ -42,14 +41,7 @@ export default function Login() {
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             <Button type="submit" className="w-full">Login</Button>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="role-switch">Login as Student</Label>
-                <Switch
-                  id="role-switch"
-                  checked={isStudent}
-                  onCheckedChange={setIsStudent}
-                />
-            </div>
+            <Button type="button" variant="outline" className="w-full" onClick={() => navigate("/student/register")}>Create an Account</Button>            
           </form>
         </CardContent>
       </Card>
