@@ -47,7 +47,6 @@ export default function StudentRegister() {
     
     // localStorage.setItem("student-session", JSON.stringify(studentSession));
     toast.success("Registration successful!");
-    console.log(API_BASE);
     
     // Navigate to student assessment
     // navigate(`/student/assessment/${projectId}/${foundAssessment.id}`);
