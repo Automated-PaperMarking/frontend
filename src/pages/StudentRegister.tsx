@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { loadProjects } from "@/utils/storage";
 import { Eye, EyeOff } from "lucide-react";
+import { API_BASE } from "@/config/env";
 
 export default function StudentRegister() {
   const [searchParams] = useSearchParams();
@@ -33,27 +34,6 @@ export default function StudentRegister() {
     }
 
     setLoading(true);
-    
-    // Get project and assessment from URL params
-    const projectId = searchParams.get("projectId");
-    const assessmentId = searchParams.get("assessmentId");
-    
-    if (!projectId || !assessmentId) {
-      toast.error("Invalid assessment link");
-      setLoading(false);
-      return;
-    }
-
-    // Find assessment by IDs
-    const projects = loadProjects();
-    const project = projects.find(p => p.id === projectId);
-    const foundAssessment = project?.assessments.find(a => a.id === assessmentId && a.type === "coding");
-
-    if (!foundAssessment) {
-      toast.error("Assessment not found");
-      setLoading(false);
-      return;
-    }
 
     // // Store student session
     // const studentSession = {
@@ -67,9 +47,10 @@ export default function StudentRegister() {
     
     // localStorage.setItem("student-session", JSON.stringify(studentSession));
     toast.success("Registration successful!");
+    console.log(API_BASE);
     
     // Navigate to student assessment
-    navigate(`/student/assessment/${projectId}/${foundAssessment.id}`);
+    // navigate(`/student/assessment/${projectId}/${foundAssessment.id}`);
   };
 
   return (
