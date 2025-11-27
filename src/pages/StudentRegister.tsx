@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { loadProjects } from "@/utils/storage";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function StudentRegister() {
   const [searchParams] = useSearchParams();
@@ -16,6 +17,8 @@ export default function StudentRegister() {
   const [studentEmail, setStudentEmail] = useState("");
   const [studentPassword, setStudentPassword] = useState("");
   const [studentConfirmPassword, setStudentConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [loading, setLoading] = useState(false);
 
@@ -111,21 +114,43 @@ export default function StudentRegister() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="studentPassword">Password</Label>
+            <div className="relative">
             <Input
               id="studentPassword"
+              type={showPassword ? "text" : "password"}
               value={studentPassword}
               onChange={(e) => setStudentPassword(e.target.value)}
               placeholder="Enter your password"
             />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff /> : <Eye />}
+            </button>
+          </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="studentConfirmPassword">Confirm Password</Label>
+            <div className="relative">
             <Input
               id="studentConfirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
               value={studentConfirmPassword}
               onChange={(e) => setStudentConfirmPassword(e.target.value)}
               placeholder="Confirm your password"
             />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+            >
+              {showConfirmPassword ? <EyeOff /> : <Eye />}
+            </button>
+          </div>
           </div>
           <Button 
             className="w-full" 
