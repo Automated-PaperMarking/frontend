@@ -11,14 +11,21 @@ import { loadProjects } from "@/utils/storage";
 export default function StudentRegister() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [studentName, setStudentName] = useState("");
-  const [studentId, setStudentId] = useState("");
+  const [studentFirstName, setStudentFirstName] = useState("");
+  const [studentLastName, setStudentLastName] = useState("");
+  const [studentEmail, setStudentEmail] = useState("");
+  const [studentPassword, setStudentPassword] = useState("");
+  const [studentConfirmPassword, setStudentConfirmPassword] = useState("");
   
   const [loading, setLoading] = useState(false);
 
   const handleRegister = () => {
-    if (!studentName.trim() || !studentId.trim()) {
+    if (!studentFirstName.trim() || !studentLastName.trim() || !studentEmail.trim() || !studentPassword.trim() || !studentConfirmPassword.trim()) {
       toast.error("Please fill in all fields");
+      return;
+    }
+    if (studentPassword !== studentConfirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
 
@@ -45,16 +52,17 @@ export default function StudentRegister() {
       return;
     }
 
-    // Store student session
-    const studentSession = {
-      studentName,
-      studentId,
-      assessmentId: assessmentId,
-      projectId: projectId,
-      enrolledAt: new Date().toISOString(),
-    };
+    // // Store student session
+    // const studentSession = {
+    //   studentFirstName,
+    //   studentLastName,
+    //   studentEmail,
+    //   assessmentId: assessmentId,
+    //   projectId: projectId,
+    //   enrolledAt: new Date().toISOString(),
+    // };
     
-    localStorage.setItem("student-session", JSON.stringify(studentSession));
+    // localStorage.setItem("student-session", JSON.stringify(studentSession));
     toast.success("Registration successful!");
     
     // Navigate to student assessment
@@ -70,26 +78,53 @@ export default function StudentRegister() {
 
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Join Assessment</CardTitle>
+          <CardTitle className="text-2xl">Student Registration</CardTitle>
           <p className="text-muted-foreground">Enter your details to join the coding assessment</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="studentName">Full Name</Label>
+            <Label htmlFor="studentFirstName">First Name</Label>
             <Input
-              id="studentName"
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              placeholder="Enter your full name"
+              id="studentFirstName"
+              value={studentFirstName}
+              onChange={(e) => setStudentFirstName(e.target.value)}
+              placeholder="Enter your first name"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="studentId">Student ID</Label>
+            <Label htmlFor="studentLastName">Last Name</Label>
             <Input
-              id="studentId"
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              placeholder="Enter your student ID"
+              id="studentLastName"
+              value={studentLastName}
+              onChange={(e) => setStudentLastName(e.target.value)}
+              placeholder="Enter your last name"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="studentEmail">Email</Label>
+            <Input
+              id="studentEmail"
+              value={studentEmail}
+              onChange={(e) => setStudentEmail(e.target.value)}
+              placeholder="Enter your email"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="studentPassword">Password</Label>
+            <Input
+              id="studentPassword"
+              value={studentPassword}
+              onChange={(e) => setStudentPassword(e.target.value)}
+              placeholder="Enter your password"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="studentConfirmPassword">Confirm Password</Label>
+            <Input
+              id="studentConfirmPassword"
+              value={studentConfirmPassword}
+              onChange={(e) => setStudentConfirmPassword(e.target.value)}
+              placeholder="Confirm your password"
             />
           </div>
           <Button 
@@ -97,7 +132,7 @@ export default function StudentRegister() {
             onClick={handleRegister}
             disabled={loading}
           >
-            {loading ? "Registering..." : "Join Assessment"}
+            {loading ? "Registering..." : "Register"}
           </Button>
         </CardContent>
       </Card>
