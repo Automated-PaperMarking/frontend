@@ -14,6 +14,8 @@ export const auth = {
   
   getToken: () => localStorage.getItem(STORAGE_KEYS.TOKEN),
   
+  getEmailVerified: () => localStorage.getItem(STORAGE_KEYS.USER) ? JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) as string).emailVerified : false,
+  
   getUser: () => {
     const raw = localStorage.getItem(STORAGE_KEYS.USER);
     if (!raw) return null;
