@@ -4,6 +4,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import ProjectPage from "@/pages/Project";
+import Profile from "@/pages/Profile";
 import StudentRegister from "@/pages/StudentRegister";
 import StudentAssessment from "@/pages/StudentAssessment";
 import AssessmentRouter from "@/pages/assessment/AssessmentRouter";
@@ -38,6 +39,7 @@ export default function AppRoutes() {
           }
         >
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="profile" element={<Profile />} />
           <Route path="project/:id" element={<ProjectPage />} />
           <Route path="project/:id/assessment/:assessmentId" element={<AssessmentRouter />} />
         </Route>
