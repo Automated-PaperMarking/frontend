@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, LayoutGrid, FolderGit2 } from "lucide-react";
+import VerifyEmailModal from "@/components/VerifyEmailModal";
 import { auth } from "@/utils/storage";
 
 const navCls = ({ isActive }: { isActive: boolean }) =>
@@ -9,9 +10,12 @@ const navCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-secondary text-foreground" : "hover:bg-muted"
   }`;
 
+  
 export default function AppLayout() {
   const [open, setOpen] = useState(true);
   const navigate = useNavigate();
+  const [emailVerified, setEmailVerified] = useState(auth.getEmailVerified() || false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
 
   const onLogout = () => {
     auth.logout();
@@ -36,12 +40,23 @@ export default function AppLayout() {
             <FolderGit2 className="h-4 w-4" />
             {open && <span>Projects</span>}
           </NavLink>
+          {!emailVerified && (
+            <button onClick={() => setShowVerifyModal(true)} className={navCls({ isActive: false })}>
+              <FolderGit2 className="h-4 w-4" />
+              {open && <span>Verify Email</span>}
+            </button>
+          )}
           <button onClick={onLogout} className="w-full mt-4 flex items-center gap-3 px-3 py-2 rounded-md hover:bg-destructive/10 text-destructive">
             <LogOut className="h-4 w-4" />
             {open && <span>Logout</span>}
           </button>
         </nav>
       </aside>
+      <VerifyEmailModal
+        email={auth.getUser()?.email ?? ""}
+        open={showVerifyModal}
+        onOpenChange={(v) => setShowVerifyModal(v)}
+      />
       <main className="min-h-screen">
         <header className="h-14 border-b flex items-center px-4">
           <h1 className="text-lg font-semibold">AI-aided Grading System</h1>
