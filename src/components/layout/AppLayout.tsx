@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutGrid, FolderGit2 } from "lucide-react";
+import { LogOut, LayoutGrid, FolderGit2, MailCheck } from "lucide-react";
 import VerifyEmailModal from "@/components/VerifyEmailModal";
 import { auth } from "@/utils/storage";
 
@@ -41,8 +41,8 @@ export default function AppLayout() {
             {open && <span>Projects</span>}
           </NavLink>
           {!emailVerified && (
-            <button onClick={() => setShowVerifyModal(true)} className={navCls({ isActive: false })}>
-              <FolderGit2 className="h-4 w-4" />
+            <button onClick={() => setShowVerifyModal(true)} className={navCls({ isActive: true })}>
+              <MailCheck className="h-4 w-4" />
               {open && <span>Verify Email</span>}
             </button>
           )}
