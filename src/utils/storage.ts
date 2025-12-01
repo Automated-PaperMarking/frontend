@@ -40,10 +40,31 @@ export const auth = {
     return data || { success: false, message: "Empty response", code: "", data: { token: "", user: {} as User } };
   },
   
-  login: (email: string, role: "student" | "teacher") => {
-    const fakeToken = `${email}-token-${Date.now()}`;
-    localStorage.setItem(STORAGE_KEYS.TOKEN, fakeToken);
-    localStorage.setItem(STORAGE_KEYS.ROLE, role);
+  login: async (email: string, password: string) => {
+    const response = await post<AuthResponse>("/v1/auth/login", { email, password });
+
+    if (!response.ok) {
+      console.error("Login API error:", { status: response.status, error: response.error });
+      throw new Error(response.error || "Login failed");
+    }
+
+    const data = response.data;
+    if (!data) {
+      throw new Error("Empty response from login");
+    }
+
+    // Persist token and user info
+    try {
+      localStorage.setItem(STORAGE_KEYS.TOKEN, data.data.token);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.data.user));
+      // Normalize role to local values: student | teacher
+      const roleNormalized = data.data.user.role === "STUDENT" ? "student" : "teacher";
+      localStorage.setItem(STORAGE_KEYS.ROLE, roleNormalized);
+    } catch (err) {
+      console.warn("Failed to persist auth data:", err);
+    }
+
+    return data;
   },
   
   logout: () => {

@@ -14,11 +14,22 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isStudent, setIsStudent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    auth.login(email || "teacher@example.com", isStudent ? "student" : "teacher");
-    navigate("/dashboard");
+    setError(null);
+    setLoading(true);
+    try {
+      await auth.login(email, password);
+      navigate("/dashboard");
+    } catch (err: any) {
+      console.error("Login failed", err);
+      setError(err?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,8 +63,9 @@ export default function Login() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full">Login</Button>
+            <Button type="submit" className="w-full" disabled={loading}>{loading ? "Signing in..." : "Login"}</Button>
             <Button type="button" variant="outline" className="w-full" onClick={() => navigate("/student/register")}>Create an Account</Button>            
+            {error && <p className="text-sm text-destructive mt-2" role="alert">{error}</p>}
           </form>
         </CardContent>
       </Card>
