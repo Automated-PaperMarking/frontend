@@ -1,20 +1,56 @@
-/* Local storage utilities and mock persistence */
-import { Project, Assessment, AssessmentType, CodingAssessment, EssayAssessment } from "@/types";
+/* Local storage utilities and API integration */
+import { Project, Assessment, AssessmentType, CodingAssessment, EssayAssessment, RegisterRequest, AuthResponse, User } from "@/types";
+import { post } from "@/lib/api";
 
 const STORAGE_KEYS = {
   TOKEN: "ai-grade-token",
+  USER: "ai-grade-user",
   PROJECTS: "ai-grade-projects",
   ROLE: "ai-grade-role",
 } as const;
 
 export const auth = {
   isLoggedIn: () => Boolean(localStorage.getItem(STORAGE_KEYS.TOKEN)),
+  
+  getToken: () => localStorage.getItem(STORAGE_KEYS.TOKEN),
+  
+  getUser: () => {
+    const raw = localStorage.getItem(STORAGE_KEYS.USER);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as User;
+    } catch {
+      return null;
+    }
+  },
+  
+  register: async (payload: RegisterRequest): Promise<AuthResponse> => {
+    const response = await post<AuthResponse>("/v1/auth/register", payload);
+
+    if (!response.ok) {
+      console.error("Registration API error:", {
+        status: response.status,
+        error: response.error,
+      });
+      throw new Error(response.error || "Registration failed");
+    }
+
+    const data = response.data;
+    
+    return data || { success: false, message: "Empty response", code: "", data: { token: "", user: {} as User } };
+  },
+  
   login: (email: string, role: "student" | "teacher") => {
     const fakeToken = `${email}-token-${Date.now()}`;
     localStorage.setItem(STORAGE_KEYS.TOKEN, fakeToken);
     localStorage.setItem(STORAGE_KEYS.ROLE, role);
   },
-  logout: () => localStorage.removeItem(STORAGE_KEYS.TOKEN),
+  
+  logout: () => {
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem(STORAGE_KEYS.ROLE);
+  },
 
   getRole: () => localStorage.getItem(STORAGE_KEYS.ROLE) as "student" | "teacher" | null,
 };

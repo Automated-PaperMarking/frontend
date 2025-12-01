@@ -1,5 +1,32 @@
 export type AssessmentType = "mcq" | "essay" | "coding";
 
+// Auth Types
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}
+
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: "STUDENT" | "TEACHER" | "ADMIN";
+  emailVerified: boolean;
+}
+
+export interface AuthResponse {
+  code: string;
+  message: string;
+  data: {
+    token: string;
+    user: User;
+  };
+  success: boolean;
+}
+
 export interface AssessmentBase {
   id: string;
   title: string;

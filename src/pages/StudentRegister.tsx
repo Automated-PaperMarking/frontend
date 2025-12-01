@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { loadProjects } from "@/utils/storage";
+import { auth } from "@/utils/storage";
 import { Eye, EyeOff } from "lucide-react";
-import { API_BASE } from "@/config/env";
+import { RegisterRequest } from "@/types";
 
 export default function StudentRegister() {
   const [searchParams] = useSearchParams();
@@ -23,7 +23,7 @@ export default function StudentRegister() {
   
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!studentFirstName.trim() || !studentLastName.trim() || !studentEmail.trim() || !studentPassword.trim() || !studentConfirmPassword.trim()) {
       toast.error("Please fill in all fields");
       return;
@@ -35,21 +35,31 @@ export default function StudentRegister() {
 
     setLoading(true);
 
-    // // Store student session
-    // const studentSession = {
-    //   studentFirstName,
-    //   studentLastName,
-    //   studentEmail,
-    //   assessmentId: assessmentId,
-    //   projectId: projectId,
-    //   enrolledAt: new Date().toISOString(),
-    // };
-    
-    // localStorage.setItem("student-session", JSON.stringify(studentSession));
-    toast.success("Registration successful!");
-    
-    // Navigate to student assessment
-    // navigate(`/student/assessment/${projectId}/${foundAssessment.id}`);
+    try {
+      const payload: RegisterRequest = {
+        firstName: studentFirstName,
+        lastName: studentLastName,
+        email: studentEmail,
+        password: studentPassword,
+      };
+
+      console.log("Registering with payload:", payload);
+      const response = await auth.register(payload);
+
+      if (response.success) {
+        toast.success(response.message || "Registration successful!");
+        // Navigate to dashboard or home page after successful registration
+        navigate("/");
+      } else {
+        toast.error(response.message || "Registration failed");
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An error occurred during registration";
+      console.error("Registration error:", errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,6 +82,7 @@ export default function StudentRegister() {
               value={studentFirstName}
               onChange={(e) => setStudentFirstName(e.target.value)}
               placeholder="Enter your first name"
+              disabled={loading}
             />
           </div>
           <div className="grid gap-2">
@@ -81,15 +92,18 @@ export default function StudentRegister() {
               value={studentLastName}
               onChange={(e) => setStudentLastName(e.target.value)}
               placeholder="Enter your last name"
+              disabled={loading}
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="studentEmail">Email</Label>
             <Input
               id="studentEmail"
+              type="email"
               value={studentEmail}
               onChange={(e) => setStudentEmail(e.target.value)}
               placeholder="Enter your email"
+              disabled={loading}
             />
           </div>
           <div className="grid gap-2">
@@ -101,12 +115,14 @@ export default function StudentRegister() {
               value={studentPassword}
               onChange={(e) => setStudentPassword(e.target.value)}
               placeholder="Enter your password"
+              disabled={loading}
             />
             <button
               type="button"
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? "Hide password" : "Show password"}
+              disabled={loading}
             >
               {showPassword ? <EyeOff /> : <Eye />}
             </button>
@@ -121,12 +137,14 @@ export default function StudentRegister() {
               value={studentConfirmPassword}
               onChange={(e) => setStudentConfirmPassword(e.target.value)}
               placeholder="Confirm your password"
+              disabled={loading}
             />
             <button
               type="button"
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              disabled={loading}
             >
               {showConfirmPassword ? <EyeOff /> : <Eye />}
             </button>
