@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import ForgotPasswordModal from "@/components/ForgotPasswordModal";
 import { useState } from "react";
 import { auth } from "@/utils/storage";
 import { Eye, EyeOff } from "lucide-react";
@@ -16,6 +17,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,12 +49,12 @@ export default function Login() {
           <form onSubmit={onSubmit} className="space-y-4" aria-label="Login form">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@school.edu" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input id="email" type="email" placeholder="example@school.edu.lk" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Input id="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
@@ -63,12 +65,16 @@ export default function Login() {
                 </button>
               </div>
             </div>
+            <button type="button" onClick={() => setForgotOpen(true)} className="w-full text-right text-destructive text-sm hover:underline">
+              Forgot your password?
+            </button>
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "Signing in..." : "Login"}</Button>
             <Button type="button" variant="outline" className="w-full" onClick={() => navigate("/student/register")}>Create an Account</Button>            
             {error && <p className="text-sm text-destructive mt-2" role="alert">{error}</p>}
           </form>
         </CardContent>
       </Card>
+      <ForgotPasswordModal initialEmail={email} open={forgotOpen} onOpenChange={(v) => setForgotOpen(v)} />
     </main>
   );
 }
