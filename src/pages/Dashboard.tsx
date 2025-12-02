@@ -3,26 +3,113 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import DateTimeRange from "@/components/DateTimeRange";
+import { post } from "@/lib/api";
+import { toast } from "@/components/ui/use-toast";
 import ProjectCard from "@/components/ProjectCard";
 import { Project } from "@/types";
-import { createProject, loadProjects } from "@/utils/storage";
+import { get } from "@/lib/api";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [enrollmentKey, setEnrollmentKey] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    setProjects(loadProjects());
-  }, []);
-
-  const onCreate = () => {
+  const onCreate = async () => {
     if (!title.trim()) return;
-    const project = createProject(title.trim());
-    setProjects((p) => [project, ...p]);
-    setTitle("");
-    setOpen(false);
+    setCreating(true);
+    try {
+      // Prepare payload according to v1/contests API
+      const payload = {
+        name: title.trim(),
+        description: description || "",
+        enrollmentKey: enrollmentKey || "",
+        startTime: startTime ? new Date(startTime).toISOString() : undefined,
+        endTime: endTime ? new Date(endTime).toISOString() : undefined,
+      } as any;
+
+      const res = await post<any>("/v1/contests", payload);
+      if (res.ok) {
+        // Use server name when available, otherwise fallback to provided title
+        const serverData = res.data?.data || res.data || payload;
+        setTitle("");
+        setDescription("");
+        setEnrollmentKey("");
+        setStartTime("");
+        setEndTime("");
+        setOpen(false);
+        toast({ title: "Created", description: "Contest created successfully." });
+        // refresh list after successful creation
+        await loadContests();
+      } else {
+        toast({ title: "Create failed", description: res.error || "Failed to create contest" });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: String(err) });
+    } finally {
+      setCreating(false);
+    }
   };
+  // loadContests is a reusable function so we can call it after creating a contest
+  const loadContests = async () => {
+    setLoadingProjects(true);
+    try {
+      // default query params: search (string), page (int), size (int), sort (array)
+      const search = "";
+      const page = 0;
+      const size = 500;
+      const sort = ["id,asc"];
+
+      const qs = new URLSearchParams();
+      if (search) qs.set("search", search);
+      qs.set("page", String(page));
+      qs.set("size", String(size));
+      sort.forEach((s) => qs.append("sort", s));
+
+      const res = await get<any>(`/v1/contests/all?${qs.toString()}`);
+      if (res.ok && res.data) {
+        let raw = res.data;
+        let list: any[] = [];
+
+        if (Array.isArray(raw)) {
+          list = raw;
+        } else if (raw && Array.isArray(raw.data)) {
+          list = raw.data;
+        } else if (raw && raw.data && Array.isArray(raw.data.data)) {
+          list = raw.data.data;
+        } else {
+          list = [];
+        }
+
+        const mapped: Project[] = list.map((c: any) => ({
+          id: c.id || c._id || crypto.randomUUID(),
+          title: c.name || c.title || "Untitled",
+          createdAt: c.createdAt || c.startTime || new Date().toISOString(),
+          assessments: [],
+        }));
+        setProjects(mapped);
+      } else {
+        setProjects([]);
+        toast({ title: "Load failed", description: res.error || "Failed to load contests" });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: String(err) });
+      setProjects([]);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  useEffect(() => {
+    // call loadContests but avoid setting state after unmount by checking mounted
+    loadContests();
+  }, []);
 
   return (
     <>
@@ -35,17 +122,27 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button>Create Project</Button>
+            <Button>Create Contest</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>New Project</DialogTitle>
+              <DialogTitle>New Contest</DialogTitle>
             </DialogHeader>
             <div className="grid gap-2">
-              <Input placeholder="Project title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input placeholder="Contest title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input placeholder="Contest description" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Input placeholder="Enrollment key" value={enrollmentKey} onChange={(e) => setEnrollmentKey(e.target.value)} />
+              <DateTimeRange
+                startIso={startTime}
+                endIso={endTime}
+                onChange={(s, e) => {
+                  setStartTime(s || "");
+                  setEndTime(e || "");
+                }}
+              />
             </div>
             <DialogFooter>
-              <Button onClick={onCreate}>Create</Button>
+              <Button onClick={onCreate} disabled={creating}>{creating ? "Creating…" : "Create"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -56,7 +153,7 @@ export default function Dashboard() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
-            <ProjectCard key={p.id} project={p} />
+            <ProjectCard key={p.id} project={p} onDeleted={() => loadContests()} />
           ))}
         </div>
       )}

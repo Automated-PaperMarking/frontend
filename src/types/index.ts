@@ -75,6 +75,7 @@ export type Assessment = MCQAssessment | EssayAssessment | CodingAssessment;
 export interface Project {
   id: string;
   title: string;
+  description?: string;
   createdAt: string;
   assessments: Assessment[];
 }
