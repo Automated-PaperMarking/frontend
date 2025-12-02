@@ -89,9 +89,14 @@ export default function Dashboard() {
 
         const mapped: Project[] = list.map((c: any) => ({
           id: c.id || c._id || crypto.randomUUID(),
-          title: c.name || c.title || "Untitled",
+          name: c.name || c.title || "Untitled",
+          description: c.description || "",
+          enrollmentKey: c.enrollmentKey || c.enrollment_key || "",
+          startTime: c.startTime || c.start_time || undefined,
+          endTime: c.endTime || c.end_time || undefined,
           createdAt: c.createdAt || c.startTime || new Date().toISOString(),
-          assessments: [],
+          updatedAt: c.updatedAt || new Date().toISOString(),
+          assessments: c.assessments || [],
         }));
         setProjects(mapped);
       } else {
