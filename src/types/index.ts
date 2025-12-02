@@ -74,8 +74,14 @@ export type Assessment = MCQAssessment | EssayAssessment | CodingAssessment;
 
 export interface Project {
   id: string;
-  title: string;
+  // Contest fields from server
+  name: string;
   description?: string;
-  createdAt: string;
-  assessments: Assessment[];
+  enrollmentKey?: string;
+  startTime?: string; // ISO with offset
+  endTime?: string; // ISO with offset
+  createdAt?: string;
+  updatedAt?: string;
+  // keep assessments optional for backward compatibility
+  assessments?: Assessment[];
 }
