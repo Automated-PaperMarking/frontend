@@ -5,12 +5,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import ProjectCard from "@/components/ProjectCard";
 import { Project } from "@/types";
-import { createProject, loadProjects } from "@/utils/storage";
+import { auth, createProject, loadProjects } from "@/utils/storage";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [title, setTitle] = useState("");
   const [open, setOpen] = useState(false);
+  const [role,setRole] = useState(auth.getUserRole() || "");
 
   useEffect(() => {
     setProjects(loadProjects());
@@ -34,9 +35,11 @@ export default function Dashboard() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>Create Project</Button>
-          </DialogTrigger>
+          {role == "student" && (
+            <DialogTrigger asChild>
+              <Button>Create Project</Button>
+            </DialogTrigger>
+          )}
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New Project</DialogTitle>
