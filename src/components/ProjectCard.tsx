@@ -7,6 +7,7 @@ import { toast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { Project } from "@/types";
+import { auth, createProject, loadProjects } from "@/utils/storage";
 
 interface Props {
   project: Project;
@@ -16,6 +17,7 @@ interface Props {
 const ProjectCard = ({ project, onDeleted }: Props) => {
   const [deleting, setDeleting] = React.useState(false);
   const date = format(new Date(project.createdAt), "PPpp");
+  const [role,setRole] = React.useState(auth.getUserRole() || "");
   return (
     <Card className="transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader>
@@ -25,7 +27,7 @@ const ProjectCard = ({ project, onDeleted }: Props) => {
             <Link to={`/project/${project.id}`}>
               <Button size="sm">Open</Button>
             </Link>
-            <button
+            {role !== "student" && (<button
               className="inline-flex items-center rounded px-2 py-1 text-sm text-destructive hover:bg-destructive/10"
               onClick={async () => {
                 if (!confirm("Delete this contest? This action cannot be undone.")) return;
@@ -50,7 +52,7 @@ const ProjectCard = ({ project, onDeleted }: Props) => {
               aria-label="Delete contest"
             >
               <ArchiveX className="h-6 w-6" />
-            </button>
+            </button>)}
           </div>
         </CardTitle>
       </CardHeader>
