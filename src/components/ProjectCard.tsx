@@ -16,13 +16,16 @@ interface Props {
 
 const ProjectCard = ({ project, onDeleted }: Props) => {
   const [deleting, setDeleting] = React.useState(false);
-  const date = format(new Date(project.createdAt), "PPpp");
+  const start = format(new Date(project.startTime), "PPpp");
+  const end = format(new Date(project.endTime), "PPpp");
+  const update = format(new Date(project.updatedAt), "PPpp");
   const [role,setRole] = React.useState(auth.getUserRole() || "");
+  
   return (
     <Card className="transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>{project.title}</span>
+          <span>{project.name}</span>
           <div className="flex items-center gap-2">
             <Link to={`/project/${project.id}`}>
               <Button size="sm">Open</Button>
@@ -59,9 +62,17 @@ const ProjectCard = ({ project, onDeleted }: Props) => {
       <CardContent>
         <div className="flex items-center text-sm text-muted-foreground gap-2">
           <CalendarDays className="h-4 w-4" />
-          <p>{project.description}</p>
-          <time dateTime={project.createdAt}>{date}</time>
+          <time>Starting : {start}</time>
         </div>
+        <div className="flex items-center text-sm text-muted-foreground gap-2">
+          <CalendarDays className="h-4 w-4" />
+          <time>Ending : {end}</time>
+        </div>
+        <div className="flex items-center text-sm text-muted-foreground gap-2">
+          <CalendarDays className="h-4 w-4" />
+          <time>Last Update : {update}</time>
+        </div>
+        <p>{project.description}</p>
       </CardContent>
     </Card>
   );

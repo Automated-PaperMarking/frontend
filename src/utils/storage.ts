@@ -102,19 +102,6 @@ export function saveProjects(projects: Project[]) {
   localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
 }
 
-export function createProject(title: string): Project {
-  const projects = loadProjects();
-  const project: Project = {
-    id: crypto.randomUUID(),
-    title,
-    createdAt: new Date().toISOString(),
-    assessments: [],
-  };
-  const updated = [project, ...projects];
-  saveProjects(updated);
-  return project;
-}
-
 export function getProject(id: string): Project | undefined {
   return loadProjects().find((p) => p.id === id);
 }
