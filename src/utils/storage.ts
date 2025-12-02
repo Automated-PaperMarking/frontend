@@ -25,6 +25,16 @@ export const auth = {
       return null;
     }
   },
+
+  getUserRole: () => {
+    const role = localStorage.getItem(STORAGE_KEYS.ROLE);
+    if (!role) return null;
+    try {
+      return role;
+    } catch {
+      return null;
+    }
+  },
   
   register: async (payload: RegisterRequest): Promise<AuthResponse> => {
     const response = await post<AuthResponse>("/v1/auth/register", payload);

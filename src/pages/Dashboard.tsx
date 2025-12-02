@@ -9,6 +9,7 @@ import { toast } from "@/components/ui/use-toast";
 import ProjectCard from "@/components/ProjectCard";
 import { Project } from "@/types";
 import { get } from "@/lib/api";
+import { auth, createProject, loadProjects } from "@/utils/storage";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [endTime, setEndTime] = useState("");
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState(false);
+  const [role,setRole] = useState(auth.getUserRole() || "");
 
   const onCreate = async () => {
     if (!title.trim()) return;
@@ -121,9 +123,11 @@ export default function Dashboard() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>Create Contest</Button>
-          </DialogTrigger>
+          {role == "student" && (
+            <DialogTrigger asChild>
+              <Button>Create Project</Button>
+            </DialogTrigger>
+          )}
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New Contest</DialogTitle>
