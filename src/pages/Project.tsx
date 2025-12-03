@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AssessmentCard from "@/components/AssessmentCard";
 import { AssessmentType, Project } from "@/types";
-import { addAssessment, getProject, loadProjects } from "@/utils/storage";
+import { addAssessment } from "@/utils/storage";
+import { get } from "@/lib/api";
 import { format } from "date-fns";
 
 export default function ProjectPage() {
@@ -18,36 +19,65 @@ export default function ProjectPage() {
   const [type, setType] = useState<AssessmentType>("mcq");
   const [open, setOpen] = useState(false);
 
+  const loadContest = async () => {
+      try {
+        const res = await get<any>(`/v1/contests/{id}?id=${id}`);
+        if (res.ok && res.data) {
+          const raw = res.data.data || res.data;
+          const p: Project = {
+            id: raw.id || raw._id || id,
+            name: raw.name || raw.title || "Untitled",
+            description: raw.description || "",
+            enrollmentKey: raw.enrollmentKey || raw.enrollment_key || "",
+            startTime: raw.startTime || raw.start_time,
+            endTime: raw.endTime || raw.end_time,
+            createdAt: raw.createdAt || raw.startTime || new Date().toISOString(),
+            updatedAt: raw.updatedAt || raw.updated_at || undefined,
+            assessments: raw.assessments || [],
+          };
+          setProject(p);
+          return;
+        }
+      } catch (err) {
+        // ignore and fallback
+      }
+    }
+
   useEffect(() => {
     if (!id) return;
-    setProject(getProject(id));
+    loadContest();
   }, [id]);
 
-  const createdAt = useMemo(() => (project ? format(new Date(project.createdAt), "PPpp") : ""), [project]);
+  const createdAt = useMemo(() => (project ? format(new Date(project.createdAt || project.startTime ||  Date.now()), "PPpp") : ""), [project]);
+  const updatedAt = useMemo(() => (project && project.updatedAt ? format(new Date(project.updatedAt), "PPpp") : ""), [project]);
 
   const onCreate = () => {
     if (!id || !title.trim()) return;
     const a = addAssessment(id, title.trim(), type);
-    setProject(getProject(id));
+    // setProject(getProject(id));
     setOpen(false);
     setTitle("");
     if (a) navigate(`/project/${id}/assessment/${a.id}`);
   };
 
-  if (!project) return <div>Project not found.</div>;
+  if (!id) return <div>Project not found.</div>;
+  if (!project) return <div className="p-6">Loading contest…</div>;
 
   return (
     <>
       <Helmet>
-        <title>{project.title} • Project</title>
-        <meta name="description" content={`Manage assessments in project ${project.title}.`} />
+        <title>{project.name} • Project</title>
+        <meta name="description" content={`Manage assessments in project ${project.name}.`} />
         <link rel="canonical" href={`${window.location.origin}/project/${project.id}`} />
       </Helmet>
       <article className="space-y-6">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">{project.title}</h1>
-            <p className="text-sm text-muted-foreground">Created {createdAt}</p>
+            <h1 className="text-2xl font-bold">{project.name}</h1>
+            <p className="text-sm text-muted-foreground">Start: {createdAt}</p>
+            {project.endTime && <p className="text-sm text-muted-foreground">End: {format(new Date(project.endTime), "PPpp")}</p>}
+            {project.createdAt && <p className="text-sm text-muted-foreground">Created: {format(new Date(project.createdAt), "PPpp")}</p>}
+            {project.updatedAt && <p className="text-sm text-muted-foreground">Updated: {updatedAt}</p>}
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
