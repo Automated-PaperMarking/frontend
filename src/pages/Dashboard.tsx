@@ -9,7 +9,7 @@ import { toast } from "@/components/ui/use-toast";
 import ProjectCard from "@/components/ProjectCard";
 import { Project } from "@/types";
 import { get } from "@/lib/api";
-import { auth, createProject, loadProjects } from "@/utils/storage";
+import { auth, loadProjects } from "@/utils/storage";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -130,9 +130,12 @@ export default function Dashboard() {
         <Dialog open={open} onOpenChange={setOpen}>
           {role !== "student" && (
             <DialogTrigger asChild>
-              <Button>Create Project</Button>
+              <Button>Create Contest</Button>
             </DialogTrigger>
-          )}
+          )} : 
+          <DialogTrigger asChild>
+            <Button>New Enrollment</Button>
+          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New Contest</DialogTitle>
