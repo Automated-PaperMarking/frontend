@@ -127,15 +127,11 @@ export default function Dashboard() {
       </Helmet>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          {role !== "student" && (
+        {role !== "student" && (<Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>Create Contest</Button>
             </DialogTrigger>
-          )} : 
-          <DialogTrigger asChild>
-            <Button>New Enrollment</Button>
-          </DialogTrigger>
+          
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New Contest</DialogTitle>
@@ -157,6 +153,34 @@ export default function Dashboard() {
               <Button onClick={onCreate} disabled={creating}>{creating ? "Creating…" : "Create"}</Button>
             </DialogFooter>
           </DialogContent>
+        </Dialog>
+        )} : 
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>New Enrollment</Button>
+            </DialogTrigger>
+          
+          {/* <DialogContent>
+            <DialogHeader>
+              <DialogTitle>New Enrollment</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-2">
+              <Input placeholder="Contest title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input placeholder="Contest description" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Input placeholder="Enrollment key" value={enrollmentKey} onChange={(e) => setEnrollmentKey(e.target.value)} />
+              <DateTimeRange
+                startIso={startTime}
+                endIso={endTime}
+                onChange={(s, e) => {
+                  setStartTime(s || "");
+                  setEndTime(e || "");
+                }}
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={onCreate} disabled={creating}>{creating ? "Creating…" : "Create"}</Button>
+            </DialogFooter>
+          </DialogContent> */}
         </Dialog>
       </div>
 
