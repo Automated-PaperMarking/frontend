@@ -106,7 +106,7 @@ const ProjectCard = ({ project, onDeleted }: Props) => {
               aria-label="Delete contest"
             >
               <ArchiveX className="h-6 w-6" />
-            </button>)}
+            </button>
           </div>
         </CardTitle>
       </CardHeader>
