@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import ProjectCard from "@/components/ProjectCard";
 import { Project } from "@/types";
 import { get } from "@/lib/api";
 import { auth, loadProjects } from "@/utils/storage";
+import { Search } from "lucide-react";
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -22,6 +23,32 @@ export default function Dashboard() {
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState(false);
   const [role,setRole] = useState(auth.getUserRole() || "");
+  const [searchValue, setSearchValue] = useState("");
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced search handler
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchValue(value);
+    
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    
+    // Set new timer
+    debounceTimer.current = setTimeout(() => {
+      loadContests(value);
+    }, 500); // 500ms debounce
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
 
   const onCreate = async () => {
     if (!title.trim()) return;
@@ -59,9 +86,36 @@ export default function Dashboard() {
     }
   };
   // loadContests is a reusable function so we can call it after creating a contest
-  const loadContests = async () => {
+  const loadContests = async (searchQuery: string = "") => {
     setLoadingProjects(true);
     try {
+      // If there's a search query, fetch specific contest by ID
+      if (searchQuery.trim()) {
+        const res = await get<any>(`/v1/contests/{id}?id=${searchQuery.trim()}`);
+        if (res.ok && res.data) {
+          const c = res.data.data || res.data;
+          const mapped: Project[] = [{
+            id: c.id || c._id || crypto.randomUUID(),
+            name: c.name || c.title || "Untitled",
+            description: c.description || "",
+            enrollmentKey: c.enrollmentKey || c.enrollment_key || "",
+            startTime: c.startTime || c.start_time || undefined,
+            endTime: c.endTime || c.end_time || undefined,
+            createdAt: c.createdAt || c.startTime || new Date().toISOString(),
+            updatedAt: c.updatedAt || new Date().toISOString(),
+            assessments: c.assessments || [],
+          }];
+          setProjects(mapped);
+          setLoadingProjects(false);
+          return;
+        } else {
+          setProjects([]);
+          toast({ title: "Not found", description: "Contest not found" });
+          setLoadingProjects(false);
+          return;
+        }
+      }
+      
       // default query params: search (string), page (int), size (int), sort (array)
       const search = "";
       const page = 0;
@@ -127,6 +181,15 @@ export default function Dashboard() {
       </Helmet>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="relative w-64">
+          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input 
+            placeholder="Search by Contest ID" 
+            value={searchValue} 
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-8"
+          />
+        </div>
         {role !== "student" && (<Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>Create Contest</Button>
@@ -154,7 +217,7 @@ export default function Dashboard() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        )} : 
+        )}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>New Enrollment</Button>
