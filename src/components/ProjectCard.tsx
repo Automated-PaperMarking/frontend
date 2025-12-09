@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { Project } from "@/types";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Input } from "./ui/input";
+import { auth } from "@/utils/storage";
 
 interface Props {
   project: Project;
@@ -24,6 +25,7 @@ const ProjectCard = ({ project, onDeleted }: Props) => {
   const [enrollmentKey, setEnrollmentKey] = useState("");
   const [openEnroll, setOpenEnroll] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
+  const [role,setRole] = React.useState(auth.getUserRole() || "");
 
   const onEnroll = async () => {
       setEnrolling(true);
@@ -81,7 +83,7 @@ const ProjectCard = ({ project, onDeleted }: Props) => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-            <button
+            {role !== "student" && (<button
               className="inline-flex items-center rounded px-2 py-1 text-sm text-destructive hover:bg-destructive/10"
               onClick={async () => {
                 if (!confirm("Delete this contest? This action cannot be undone.")) return;
