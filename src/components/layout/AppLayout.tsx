@@ -40,12 +40,12 @@ export default function AppLayout() {
             <FolderGit2 className="h-4 w-4" />
             {open && <span>Projects</span>}
           </NavLink>
-          <NavLink to="/profile" className={navCls({ isActive: true })}>
+          <NavLink to="/profile" className={navCls}>
             <User className="h-4 w-4" />
             {open && <span>Profile</span>}
           </NavLink>
           {!emailVerified && (
-            <button onClick={() => setShowVerifyModal(true)} className={navCls({ isActive: true })}>
+            <button onClick={() => setShowVerifyModal(true) } className={navCls({ isActive: true })}>
               <MailCheck className="h-4 w-4" />
               {open && <span>Verify Email</span>}
             </button>
