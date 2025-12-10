@@ -240,7 +240,7 @@ export default function ProblemCollection() {
             className="pl-8"
           /> */}
         </div>
-        {role !== "student" && (
+        {role == "student" && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>Create Problem</Button>
