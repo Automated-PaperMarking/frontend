@@ -190,7 +190,7 @@ export default function Dashboard() {
             className="pl-8"
           />
         </div>
-        {role !== "student" && (<Dialog open={open} onOpenChange={setOpen}>
+        {role !== "student" ? (<Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>Create Contest</Button>
             </DialogTrigger>
@@ -217,11 +217,11 @@ export default function Dashboard() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        )} 
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button>New Enrollment</Button>
-            </DialogTrigger>
+        ): (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>New Enrollment</Button>
+          </DialogTrigger>
           
           {/* <DialogContent>
             <DialogHeader>
@@ -244,7 +244,7 @@ export default function Dashboard() {
               <Button onClick={onCreate} disabled={creating}>{creating ? "Creating…" : "Create"}</Button>
             </DialogFooter>
           </DialogContent> */}
-        </Dialog>
+        </Dialog>)}
       </div>
 
       {projects.length === 0 ? (
