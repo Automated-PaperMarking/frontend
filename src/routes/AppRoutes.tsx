@@ -44,7 +44,7 @@ export default function AppRoutes() {
           <Route path="problems" element={<ProblemCollection />} />
           <Route path="profile" element={<Profile />} />
           <Route path="project/:id" element={<ProjectPage />} />
-          <Route path="problem-submission/:problemId" element={<ProblemSubmission />} /> 
+          <Route path="problem-submission/:contestId/:problemId" element={<ProblemSubmission />} /> 
           <Route path="project/:id/assessment/:assessmentId" element={<AssessmentRouter />} />
         </Route>
         <Route path="*" element={<Navigate to={isAuthed ? "/dashboard" : "/login"} replace />} />
