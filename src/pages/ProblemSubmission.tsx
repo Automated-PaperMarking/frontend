@@ -47,7 +47,17 @@ export default function ProblemSubmission() {
   const { problemId } = useParams<{ problemId: string }>();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(`// Example starter code
+
+function solve(input) {
+  // 1. Convert the input string to a number
+  const number = Number(input);
+
+  // 2. Add 10 and return the result
+  return number + 10;
+
+  // Remove the body of the function and implement your solution here
+}`);
 
   useEffect(() => {
     const loadProblem = async () => {
@@ -112,6 +122,18 @@ export default function ProblemSubmission() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Language</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <select className="border rounded-md h-9 px-3 bg-background" value={"javascript"}>
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+          </select>
+        </CardContent>
+      </Card>
+
       {sampleTests.length > 0 && (
         <Card>
           <CardHeader>
@@ -157,7 +179,7 @@ export default function ProblemSubmission() {
             }}>
               Run Sample Tests
             </Button>
-            <Button variant="secondary" onClick={() => {
+            {hiddenTests.length > 0 && (<Button onClick={() => {
               const results = run(true);
               const pass = results.every(r => r.pass);
               const message = `${pass ? '✅ All tests passed!' : '❌ Some tests failed'}\n\n${results.map(r => `${r.pass ? '✅' : '❌'} ${r.message}`).join('\n')}`;
@@ -166,6 +188,18 @@ export default function ProblemSubmission() {
               } else {
                 toast.error(message);
               }
+            }}>
+              Run Sample & Hidden Tests
+            </Button>)}
+            <Button variant="secondary" onClick={() => {
+              // const results = run(true);
+              // const pass = results.every(r => r.pass);
+              // const message = `${pass ? '✅ All tests passed!' : '❌ Some tests failed'}\n\n${results.map(r => `${r.pass ? '✅' : '❌'} ${r.message}`).join('\n')}`;
+              // if (pass) {
+              //   toast.success(message);
+              // } else {
+              //   toast.error(message);
+              // }
             }}>
               Submit Solution
             </Button>
