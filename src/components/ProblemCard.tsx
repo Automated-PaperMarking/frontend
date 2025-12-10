@@ -71,7 +71,7 @@ const ProblemCard = ({ problem, onDeleted }: Props) => {
             <Button
               variant="outline"
               size="sm"
-              // onClick={() => navigate(`/problems/${problem.id}`)}
+              onClick={() => navigate(`/problem-submission/${problem.id}`)}
               className="h-8"
             >
               <Eye className="h-4 w-4 mr-1" />
