@@ -30,14 +30,16 @@ interface Problem {
 interface Props {
   problem: Problem;
   onDeleted?: (id: string) => void;
+  contestId?: string;
 }
 
-const ProblemCard = ({ problem, onDeleted }: Props) => {
+const ProblemCard = ({ problem, onDeleted, contestId }: Props) => {
   const [deleting, setDeleting] = React.useState(false);
   const navigate = useNavigate();
   const createdAt = format(new Date(problem.createdAt), "PPpp");
   const updatedAt = format(new Date(problem.updatedAt), "PPpp");
   const [role, setRole] = React.useState(auth.getUserRole() || "");
+  const resolvedContestId = contestId || problem.contestId || "unknown";
 
   const onDelete = async () => {
     if (!confirm("Delete this problem? This action cannot be undone.")) return;
@@ -71,7 +73,7 @@ const ProblemCard = ({ problem, onDeleted }: Props) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/problem-submission/${problem.id}`)}
+              onClick={() => navigate(`/problem-submission/${resolvedContestId}/${problem.id}`)}
               className="h-8"
             >
               <Eye className="h-4 w-4 mr-1" />
