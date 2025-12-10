@@ -53,29 +53,33 @@ export default function ProblemCollection() {
     { id: crypto.randomUUID(), input: "", expectedOutput: "", type: "SAMPLE" },
   ]);
 
-//   // Debounced search handler
-//   const handleSearchChange = useCallback((value: string) => {
-//     setSearchValue(value);
+  // Debounced search handler
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchValue(value);
     
-//     // Clear existing timer
-//     if (debounceTimer.current) {
-//       clearTimeout(debounceTimer.current);
-//     }
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
     
-//     // Set new timer
-//     debounceTimer.current = setTimeout(() => {
-//       loadContests(value);
-//     }, 500); // 500ms debounce
-//   }, []);
+    // Set new timer
+    debounceTimer.current = setTimeout(() => {
+      if (value.trim()) {
+        searchProblems(value.trim());
+      } else {
+        loadProblems();
+      }
+    }, 500); // 500ms debounce
+  }, []);
 
-//   // Cleanup on unmount
-//   useEffect(() => {
-//     return () => {
-//       if (debounceTimer.current) {
-//         clearTimeout(debounceTimer.current);
-//       }
-//     };
-//   }, []);
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
 
   // Load all problems from API
   const loadProblems = async () => {
@@ -109,57 +113,31 @@ export default function ProblemCollection() {
       setLoadingProjects(false);
     }
   };
-      
-//       // default query params: search (string), page (int), size (int), sort (array)
-//       const search = "";
-//       const page = 0;
-//       const size = 500;
-//       const sort = ["id,asc"];
 
-//       const qs = new URLSearchParams();
-//       if (search) qs.set("search", search);
-//       qs.set("page", String(page));
-//       qs.set("size", String(size));
-//       sort.forEach((s) => qs.append("sort", s));
-
-//       const res = await get<any>(`/v1/contests/all?${qs.toString()}`);
-//       if (res.ok && res.data) {
-//         let raw = res.data;
-//         let list: any[] = [];
-
-//         if (Array.isArray(raw)) {
-//           list = raw;
-//         } else if (raw && Array.isArray(raw.data)) {
-//           list = raw.data;
-//         } else if (raw && raw.data && Array.isArray(raw.data.data)) {
-//           list = raw.data.data;
-//         } else {
-//           list = [];
-//         }
-
-//         const mapped: Project[] = list.map((c: any) => ({
-//           id: c.id || c._id || crypto.randomUUID(),
-//           name: c.name || c.title || "Untitled",
-//           description: c.description || "",
-//           enrollmentKey: c.enrollmentKey || c.enrollment_key || "",
-//           startTime: c.startTime || c.start_time || undefined,
-//           endTime: c.endTime || c.end_time || undefined,
-//           createdAt: c.createdAt || c.startTime || new Date().toISOString(),
-//           updatedAt: c.updatedAt || new Date().toISOString(),
-//           assessments: c.assessments || [],
-//         }));
-//         setProjects(mapped);
-//       } else {
-//         setProjects([]);
-//         toast({ title: "Load failed", description: res.error || "Failed to load contests" });
-//       }
-//     } catch (err) {
-//       toast({ title: "Error", description: String(err) });
-//       setProjects([]);
-//     } finally {
-//       setLoadingProjects(false);
-//     }
-//   };
+  // Search for a specific problem by ID
+  const searchProblems = async (problemId: string) => {
+    setLoadingProjects(true);
+    try {
+      const res = await get<any>(`/v1/problems/${problemId}`);
+      if (res.ok && res.data) {
+        const problem = res.data.data || res.data;
+        if (problem && problem.id) {
+          setProjects([problem]);
+        } else {
+          setProjects([]);
+          toast.error("Problem not found");
+        }
+      } else {
+        setProjects([]);
+        toast.error(res.error || "Failed to search problem");
+      }
+    } catch (err) {
+      toast.error(String(err));
+      setProjects([]);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
 
   useEffect(() => {
     // Load all Problems on mount
@@ -233,12 +211,12 @@ export default function ProblemCollection() {
         <h1 className="text-2xl font-bold">Problems</h1>
         <div className="relative w-64">
           <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          {/* <Input 
-            placeholder="Search by Contest ID" 
+          <Input 
+            placeholder="Search by Problem ID" 
             value={searchValue} 
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-8"
-          /> */}
+          />
         </div>
         {role !== "student" && (
           <Dialog open={open} onOpenChange={setOpen}>
