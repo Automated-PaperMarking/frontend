@@ -1,64 +1,170 @@
 import { Helmet } from "react-helmet-async";
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, Outlet } from "react-router-dom";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import DateTimeRange from "@/components/DateTimeRange";
+import { post } from "@/lib/api";
+import { toast } from "sonner";
+import ProblemCard from "@/components/ProblemCard";
+import { Project } from "@/types";
+import { get } from "@/lib/api";
+import { auth, loadProjects } from "@/utils/storage";
+import { Search } from "lucide-react";
+import { useParams } from "react-router";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import AssessmentCard from "@/components/AssessmentCard";
-import { AssessmentType, Project } from "@/types";
-import { addAssessment } from "@/utils/storage";
-import { get, post } from "@/lib/api";
-import { toast } from "sonner";
-import { format } from "date-fns";
 
-export default function ProjectPage() {
+interface Problem {
+  id: string;
+  title: string;
+  statement: string;
+  difficultyLevel: "EASY" | "MEDIUM" | "HARD";
+  contestId: string | null;
+  testCases: Array<{
+    id: string;
+    input: string;
+    expectedOutput: string;
+    type: "SAMPLE" | "HIDDEN";
+    problemId: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export default function ProblemCollection() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [project, setProject] = useState<Project | undefined>(undefined);
-  const [open, setOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
-  
-  // Coding problem states
+  const [projects, setProjects] = useState<Problem[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [enrollmentKey, setEnrollmentKey] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [role,setRole] = useState(auth.getUserRole() || "");
+  const [searchValue, setSearchValue] = useState("");
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
   const [statement, setStatement] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState("EASY");
   const [testCases, setTestCases] = useState<Array<{ id: string; input: string; expectedOutput: string; type: "SAMPLE" | "HIDDEN" }>>([
     { id: crypto.randomUUID(), input: "", expectedOutput: "", type: "SAMPLE" },
   ]);
 
-  const loadContest = async () => {
-      try {
-        const res = await get<any>(`/v1/contests/{id}?id=${id}`);
-        if (res.ok && res.data) {
-          const raw = res.data.data || res.data;
-          const p: Project = {
-            id: raw.id || raw._id || id,
-            name: raw.name || raw.title || "Untitled",
-            description: raw.description || "",
-            enrollmentKey: raw.enrollmentKey || raw.enrollment_key || "",
-            startTime: raw.startTime || raw.start_time,
-            endTime: raw.endTime || raw.end_time,
-            createdAt: raw.createdAt || raw.startTime || new Date().toISOString(),
-            updatedAt: raw.updatedAt || raw.updated_at || undefined,
-            assessments: raw.assessments || [],
-          };
-          setProject(p);
-          return;
+//   // Debounced search handler
+//   const handleSearchChange = useCallback((value: string) => {
+//     setSearchValue(value);
+    
+//     // Clear existing timer
+//     if (debounceTimer.current) {
+//       clearTimeout(debounceTimer.current);
+//     }
+    
+//     // Set new timer
+//     debounceTimer.current = setTimeout(() => {
+//       loadContests(value);
+//     }, 500); // 500ms debounce
+//   }, []);
+
+//   // Cleanup on unmount
+//   useEffect(() => {
+//     return () => {
+//       if (debounceTimer.current) {
+//         clearTimeout(debounceTimer.current);
+//       }
+//     };
+//   }, []);
+
+  // Load all problems from API
+  const loadProblems = async () => {
+    setLoadingProjects(true);
+    try {
+      const res = await get<any>(`/v1/problems/all`);
+      if (res.ok && res.data) {
+        let raw = res.data;
+        let problemsList: Problem[] = [];
+
+        // Handle different response structures
+        if (Array.isArray(raw)) {
+          problemsList = raw;
+        } else if (raw && Array.isArray(raw.data)) {
+          problemsList = raw.data;
+        } else if (raw && raw.data && Array.isArray(raw.data.data)) {
+          problemsList = raw.data.data;
+        } else {
+          problemsList = [];
         }
-      } catch (err) {
-        // ignore and fallback
+
+        setProjects(problemsList as any);
+      } else {
+        setProjects([]);
+        toast.error(res.error || "Failed to load problems");
       }
+    } catch (err) {
+      toast.error(String(err));
+      setProjects([]);
+    } finally {
+      setLoadingProjects(false);
     }
+  };
+      
+//       // default query params: search (string), page (int), size (int), sort (array)
+//       const search = "";
+//       const page = 0;
+//       const size = 500;
+//       const sort = ["id,asc"];
+
+//       const qs = new URLSearchParams();
+//       if (search) qs.set("search", search);
+//       qs.set("page", String(page));
+//       qs.set("size", String(size));
+//       sort.forEach((s) => qs.append("sort", s));
+
+//       const res = await get<any>(`/v1/contests/all?${qs.toString()}`);
+//       if (res.ok && res.data) {
+//         let raw = res.data;
+//         let list: any[] = [];
+
+//         if (Array.isArray(raw)) {
+//           list = raw;
+//         } else if (raw && Array.isArray(raw.data)) {
+//           list = raw.data;
+//         } else if (raw && raw.data && Array.isArray(raw.data.data)) {
+//           list = raw.data.data;
+//         } else {
+//           list = [];
+//         }
+
+//         const mapped: Project[] = list.map((c: any) => ({
+//           id: c.id || c._id || crypto.randomUUID(),
+//           name: c.name || c.title || "Untitled",
+//           description: c.description || "",
+//           enrollmentKey: c.enrollmentKey || c.enrollment_key || "",
+//           startTime: c.startTime || c.start_time || undefined,
+//           endTime: c.endTime || c.end_time || undefined,
+//           createdAt: c.createdAt || c.startTime || new Date().toISOString(),
+//           updatedAt: c.updatedAt || new Date().toISOString(),
+//           assessments: c.assessments || [],
+//         }));
+//         setProjects(mapped);
+//       } else {
+//         setProjects([]);
+//         toast({ title: "Load failed", description: res.error || "Failed to load contests" });
+//       }
+//     } catch (err) {
+//       toast({ title: "Error", description: String(err) });
+//       setProjects([]);
+//     } finally {
+//       setLoadingProjects(false);
+//     }
+//   };
 
   useEffect(() => {
-    if (!id) return;
-    loadContest();
-  }, [id]);
-
-  const createdAt = useMemo(() => (project ? format(new Date(project.createdAt || project.startTime ||  Date.now()), "PPpp") : ""), [project]);
-  const updatedAt = useMemo(() => (project && project.updatedAt ? format(new Date(project.updatedAt), "PPpp") : ""), [project]);
+    // Load all Problems on mount
+    loadProblems();
+  }, []);
 
   const addTestCase = (type: "SAMPLE" | "HIDDEN" = "SAMPLE") => {
     setTestCases([...testCases, { id: crypto.randomUUID(), input: "", expectedOutput: "", type }]);
@@ -73,7 +179,7 @@ export default function ProjectPage() {
   };
 
   const onCreate = async () => {
-    if (!id || !title.trim() || !statement.trim()) {
+    if (!title.trim() || !statement.trim()) {
       toast.error("Please fill in title and statement");
       return;
     }
@@ -98,14 +204,14 @@ export default function ProjectPage() {
 
       const res = await post<any>("/v1/problems", payload);
       if (res.ok) {
-        toast.success("Coding problem created successfully!");
+        toast.success("Problem created successfully!");
         setOpen(false);
         setTitle("");
         setStatement("");
         setDifficultyLevel("EASY");
         setTestCases([{ id: crypto.randomUUID(), input: "", expectedOutput: "", type: "SAMPLE" }]);
-        // Refresh project data
-        await loadContest();
+        // Refresh problems list
+        await loadProblems();
       } else {
         toast.error(res.error || "Failed to create problem");
       }
@@ -116,28 +222,28 @@ export default function ProjectPage() {
     }
   };
 
-  if (!id) return <div>Project not found.</div>;
-  if (!project) return <div className="p-6">Loading contest…</div>;
-
   return (
     <>
       <Helmet>
-        <title>{project.name} • Project</title>
-        <meta name="description" content={`Manage assessments in project ${project.name}.`} />
-        <link rel="canonical" href={`${window.location.origin}/project/${project.id}`} />
+        <title>Problems • AI Grading System</title>
+        <meta name="description" content="Create and manage projects and assessments." />
+        <link rel="canonical" href={`${window.location.origin}/problems`} />
       </Helmet>
-      <article className="space-y-6">
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{project.name}</h1>
-            <p className="text-sm text-muted-foreground">Start: {createdAt}</p>
-            {project.endTime && <p className="text-sm text-muted-foreground">End: {format(new Date(project.endTime), "PPpp")}</p>}
-            {project.createdAt && <p className="text-sm text-muted-foreground">Created: {format(new Date(project.createdAt), "PPpp")}</p>}
-            {project.updatedAt && <p className="text-sm text-muted-foreground">Updated: {updatedAt}</p>}
-          </div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Problems</h1>
+        <div className="relative w-64">
+          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          {/* <Input 
+            placeholder="Search by Contest ID" 
+            value={searchValue} 
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-8"
+          /> */}
+        </div>
+        {role !== "student" && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>Create Assessment</Button>
+              <Button>Create Problem</Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
@@ -233,20 +339,18 @@ export default function ProjectPage() {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
-        </header>
+          </Dialog>)}
+      </div>
 
-        {project.assessments.length === 0 ? (
-          <div className="text-muted-foreground">No assessments yet.</div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {project.assessments.map((a) => (
-              <AssessmentCard key={a.id} projectId={project.id} assessment={a} />
-            ))}
-          </div>
-        )}
-      </article>
-      <Outlet />
+      {projects.length === 0 ? (
+        <div className="text-muted-foreground">No problems yet. {role !== "student" && "Create your first problem."}</div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((p) => (
+            <ProblemCard key={p.id} problem={p} onDeleted={() => loadProblems()} />
+          ))}
+        </div>
+      )}
     </>
   );
 }

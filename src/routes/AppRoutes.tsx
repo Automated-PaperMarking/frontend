@@ -9,6 +9,7 @@ import StudentRegister from "@/pages/StudentRegister";
 import StudentAssessment from "@/pages/StudentAssessment";
 import AssessmentRouter from "@/pages/assessment/AssessmentRouter";
 import { auth } from "@/utils/storage";
+import ProblemCollection from "@/pages/ProblemCollection";
 
 function Protected({ children }: { children: React.ReactNode }) {
   return auth.isLoggedIn() ? <>{children}</> : <Navigate to="/login" replace />;
@@ -39,6 +40,7 @@ export default function AppRoutes() {
           }
         >
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="problems" element={<ProblemCollection />} />
           <Route path="profile" element={<Profile />} />
           <Route path="project/:id" element={<ProjectPage />} />
           <Route path="project/:id/assessment/:assessmentId" element={<AssessmentRouter />} />
