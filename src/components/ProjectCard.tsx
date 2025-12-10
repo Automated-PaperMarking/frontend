@@ -27,35 +27,6 @@ const ProjectCard = ({ project, onDeleted }: Props) => {
   const [enrolling, setEnrolling] = useState(false);
   const [role,setRole] = React.useState(auth.getUserRole() || "");
 
-  const onEnroll = async () => {
-      setEnrolling(true);
-      try {
-        // Prepare payload according to v1/contests API
-        const payload = {
-          contestId: project.id || "",
-          enrollmentKey: enrollmentKey || "",
-        } as any;
-  
-        const res = await post<any>("/v1/contests/enroll", payload);
-        if (res.ok) {
-          // Use server name when available, otherwise fallback to provided title
-          const serverData = res.data?.data || res.data || payload;
-          setEnrollmentKey("");
-          setOpenEnroll(false);
-          toast({ title: "Enrolled", description: "Enrolled to the contest successfully." });
-          // After Enrollment
-
-
-        } else {
-          toast({ title: "Enrolling failed", description: res.error || "Failed to enroll to the contest" });
-        }
-      } catch (err) {
-        toast({ title: "Error", description: String(err) });
-      } finally {
-        setEnrolling(false);
-      }
-    };
-
   return (
     <Card className="transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader>
@@ -65,24 +36,6 @@ const ProjectCard = ({ project, onDeleted }: Props) => {
             <Link to={`/project/${project.id}`}>
               <Button size="sm">Open</Button>
             </Link>
-            <Dialog open={openEnroll} onOpenChange={setOpenEnroll}>
-          <DialogTrigger asChild>
-            <Button>Enroll</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>New Enrollment</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-2">
-              <Input placeholder="Enrollment key" value={enrollmentKey} onChange={(e) => setEnrollmentKey(e.target.value)} />
-            </div>
-            <DialogFooter>
-              <Button 
-              onClick={onEnroll} 
-              disabled={enrolling}>{enrolling ? "Enrolling" : "Enroll"}</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
             {role !== "student" && (<button
               className="inline-flex items-center rounded px-2 py-1 text-sm text-destructive hover:bg-destructive/10"
               onClick={async () => {

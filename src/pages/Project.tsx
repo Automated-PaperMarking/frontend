@@ -42,6 +42,12 @@ export default function ProjectPage() {
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   
+  // Enrollment states
+  const [openEnroll, setOpenEnroll] = useState(false);
+  const [enrollmentKey, setEnrollmentKey] = useState("");
+  const [enrolling, setEnrolling] = useState(false);
+  const [notEnrolled, setNotEnrolled] = useState(true);
+  
   // Coding problem states
   const [title, setTitle] = useState("");
   const [statement, setStatement] = useState("");
@@ -95,6 +101,7 @@ export default function ProjectPage() {
         }
 
         setProblems(problemsList);
+        setNotEnrolled(false);
       } else {
         setProblems([]);
         toast.error(res.error || "Failed to load problems");
@@ -115,6 +122,37 @@ export default function ProjectPage() {
 
   const createdAt = useMemo(() => (project ? format(new Date(project.createdAt || project.startTime ||  Date.now()), "PPpp") : ""), [project]);
   const updatedAt = useMemo(() => (project && project.updatedAt ? format(new Date(project.updatedAt), "PPpp") : ""), [project]);
+
+  const onEnroll = async () => {
+    if (!id || !enrollmentKey.trim()) {
+      toast.error("Please enter an enrollment key");
+      return;
+    }
+    
+    setEnrolling(true);
+    try {
+      const payload = {
+        contestId: id,
+        enrollmentKey: enrollmentKey.trim(),
+      };
+
+      const res = await post<any>("/v1/contests/enroll", payload);
+      if (res.ok) {
+        toast.success("Successfully enrolled in the contest!");
+        setEnrollmentKey("");
+        setOpenEnroll(false);
+        setNotEnrolled(false);
+        // Reload problems after enrollment
+        await loadProblems();
+      } else {
+        toast.error(res.error || "Failed to enroll in the contest");
+      }
+    } catch (err) {
+      toast.error(String(err));
+    } finally {
+      setEnrolling(false);
+    }
+  };
 
   const addTestCase = (type: "SAMPLE" | "HIDDEN" = "SAMPLE") => {
     setTestCases([...testCases, { id: crypto.randomUUID(), input: "", expectedOutput: "", type }]);
@@ -318,7 +356,36 @@ export default function ProjectPage() {
 
           <TabsContent value="problems" className="space-y-4">
             <h2 className="text-xl font-bold">Problems</h2>
-            {problems.length === 0 ? (
+            {notEnrolled ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-8">
+                <p className="text-muted-foreground">You are not enrolled in this contest.</p>
+                <Dialog open={openEnroll} onOpenChange={setOpenEnroll}>
+                  <DialogTrigger asChild>
+                    <Button>Enroll</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>New Enrollment</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-2">
+                      <Input 
+                        placeholder="Enrollment key" 
+                        value={enrollmentKey} 
+                        onChange={(e) => setEnrollmentKey(e.target.value)} 
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button 
+                        onClick={onEnroll} 
+                        disabled={enrolling}
+                      >
+                        {enrolling ? "Enrolling..." : "Enroll"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            ) : problems.length === 0 ? (
               <div className="text-muted-foreground">No problems assigned yet.</div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
