@@ -6,8 +6,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AssessmentCard from "@/components/AssessmentCard";
 import ProblemCard from "@/components/ProblemCard";
+import Leaderboard from "@/components/Leaderboard";
 import { AssessmentType, Project } from "@/types";
 import { addAssessment } from "@/utils/storage";
 import { get, post } from "@/lib/api";
@@ -308,28 +310,29 @@ export default function ProjectPage() {
           </Dialog>
         </header>
 
-        {problems.length === 0 ? (
-          <div className="text-muted-foreground">No assessments yet.</div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {project.assessments.map((a) => (
-              <AssessmentCard key={a.id} projectId={project.id} assessment={a} />
-            ))}
-          </div>
-        )}
+        <Tabs defaultValue="problems" className="w-full">
+          <TabsList>
+            <TabsTrigger value="problems">Problems</TabsTrigger>
+            <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+          </TabsList>
 
-        <div>
-          <h2 className="text-xl font-bold mb-4">Problems</h2>
-          {problems.length === 0 ? (
-            <div className="text-muted-foreground">No problems assigned yet.</div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {problems.map((p) => (
-                <ProblemCard key={p.id} problem={p} contestId={id} onDeleted={() => loadProblems()} />
-              ))}
-            </div>
-          )}
-        </div>
+          <TabsContent value="problems" className="space-y-4">
+            <h2 className="text-xl font-bold">Problems</h2>
+            {problems.length === 0 ? (
+              <div className="text-muted-foreground">No problems assigned yet.</div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {problems.map((p) => (
+                  <ProblemCard key={p.id} problem={p} contestId={id} onDeleted={() => loadProblems()} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="leaderboard" className="space-y-4">
+            {id && <Leaderboard contestId={id} />}
+          </TabsContent>
+        </Tabs>
       </article>
       <Outlet />
     </>
