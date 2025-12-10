@@ -72,7 +72,7 @@ const ProblemCard = ({ problem, onDeleted }: Props) => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {role == "student" && (
+            {role !== "student" && (
               <Button
                 variant="ghost"
                 size="sm"
