@@ -7,16 +7,36 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import AssessmentCard from "@/components/AssessmentCard";
+import ProblemCard from "@/components/ProblemCard";
 import { AssessmentType, Project } from "@/types";
 import { addAssessment } from "@/utils/storage";
 import { get, post } from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+interface Problem {
+  id: string;
+  title: string;
+  statement: string;
+  difficultyLevel: "EASY" | "MEDIUM" | "HARD";
+  contestId: string | null;
+  testCases: Array<{
+    id: string;
+    input: string;
+    expectedOutput: string;
+    type: "SAMPLE" | "HIDDEN";
+    problemId: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | undefined>(undefined);
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [loadingProblems, setLoadingProblems] = useState(false);
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   
@@ -24,9 +44,9 @@ export default function ProjectPage() {
   const [title, setTitle] = useState("");
   const [statement, setStatement] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState("EASY");
-  const [testCases, setTestCases] = useState<Array<{ id: string; input: string; expectedOutput: string; type: "SAMPLE" | "HIDDEN" }>>([
-    { id: crypto.randomUUID(), input: "", expectedOutput: "", type: "SAMPLE" },
-  ]);
+  const [testCases, setTestCases] = useState<Array<{ id: string; input: string; expectedOutput: string; type: "SAMPLE" | "HIDDEN" }>>(
+    [{ id: crypto.randomUUID(), input: "", expectedOutput: "", type: "SAMPLE" }]
+  );
 
   const loadContest = async () => {
       try {
@@ -52,9 +72,43 @@ export default function ProjectPage() {
       }
     }
 
+  const loadProblems = async () => {
+    if (!id) return;
+    setLoadingProblems(true);
+    try {
+      const res = await get<any>(`/v1/contests/problems/${id}`);
+      if (res.ok && res.data) {
+        let raw = res.data;
+        let problemsList: Problem[] = [];
+
+        // Handle different response structures
+        if (Array.isArray(raw)) {
+          problemsList = raw;
+        } else if (raw && Array.isArray(raw.data)) {
+          problemsList = raw.data;
+        } else if (raw && raw.data && Array.isArray(raw.data.data)) {
+          problemsList = raw.data.data;
+        } else {
+          problemsList = [];
+        }
+
+        setProblems(problemsList);
+      } else {
+        setProblems([]);
+        toast.error(res.error || "Failed to load problems");
+      }
+    } catch (err) {
+      toast.error(String(err));
+      setProblems([]);
+    } finally {
+      setLoadingProblems(false);
+    }
+  };
+
   useEffect(() => {
     if (!id) return;
     loadContest();
+    loadProblems();
   }, [id]);
 
   const createdAt = useMemo(() => (project ? format(new Date(project.createdAt || project.startTime ||  Date.now()), "PPpp") : ""), [project]);
@@ -123,7 +177,7 @@ export default function ProjectPage() {
         setDifficultyLevel("EASY");
         setTestCases([{ id: crypto.randomUUID(), input: "", expectedOutput: "", type: "SAMPLE" }]);
         // Refresh project data
-        await loadContest();
+        await loadProblems();
       } else {
         toast.error(res.error || "Failed to create problem");
       }
@@ -254,7 +308,7 @@ export default function ProjectPage() {
           </Dialog>
         </header>
 
-        {project.assessments.length === 0 ? (
+        {problems.length === 0 ? (
           <div className="text-muted-foreground">No assessments yet.</div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -263,6 +317,19 @@ export default function ProjectPage() {
             ))}
           </div>
         )}
+
+        <div>
+          <h2 className="text-xl font-bold mb-4">Problems</h2>
+          {problems.length === 0 ? (
+            <div className="text-muted-foreground">No problems assigned yet.</div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {problems.map((p) => (
+                <ProblemCard key={p.id} problem={p} onDeleted={() => loadProblems()} />
+              ))}
+            </div>
+          )}
+        </div>
       </article>
       <Outlet />
     </>
