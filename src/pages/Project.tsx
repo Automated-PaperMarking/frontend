@@ -5,19 +5,28 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import AssessmentCard from "@/components/AssessmentCard";
 import { AssessmentType, Project } from "@/types";
 import { addAssessment } from "@/utils/storage";
-import { get } from "@/lib/api";
+import { get, post } from "@/lib/api";
+import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | undefined>(undefined);
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState<AssessmentType>("mcq");
   const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  
+  // Coding problem states
+  const [title, setTitle] = useState("");
+  const [statement, setStatement] = useState("");
+  const [difficultyLevel, setDifficultyLevel] = useState("EASY");
+  const [testCases, setTestCases] = useState<Array<{ id: string; input: string; expectedOutput: string; type: "SAMPLE" | "HIDDEN" }>>([
+    { id: crypto.randomUUID(), input: "", expectedOutput: "", type: "SAMPLE" },
+  ]);
 
   const loadContest = async () => {
       try {
@@ -51,13 +60,60 @@ export default function ProjectPage() {
   const createdAt = useMemo(() => (project ? format(new Date(project.createdAt || project.startTime ||  Date.now()), "PPpp") : ""), [project]);
   const updatedAt = useMemo(() => (project && project.updatedAt ? format(new Date(project.updatedAt), "PPpp") : ""), [project]);
 
-  const onCreate = () => {
-    if (!id || !title.trim()) return;
-    const a = addAssessment(id, title.trim(), type);
-    // setProject(getProject(id));
-    setOpen(false);
-    setTitle("");
-    if (a) navigate(`/project/${id}/assessment/${a.id}`);
+  const addTestCase = (type: "SAMPLE" | "HIDDEN" = "SAMPLE") => {
+    setTestCases([...testCases, { id: crypto.randomUUID(), input: "", expectedOutput: "", type }]);
+  };
+
+  const updateTestCase = (id: string, patch: Partial<{ input: string; expectedOutput: string; type: "SAMPLE" | "HIDDEN" }>) => {
+    setTestCases(testCases.map((tc) => (tc.id === id ? { ...tc, ...patch } : tc)));
+  };
+
+  const removeTestCase = (id: string) => {
+    setTestCases(testCases.filter((tc) => tc.id !== id));
+  };
+
+  const onCreate = async () => {
+    if (!id || !title.trim() || !statement.trim()) {
+      toast.error("Please fill in title and statement");
+      return;
+    }
+    
+    if (testCases.length === 0) {
+      toast.error("Please add at least one test case");
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const payload = {
+        title: title.trim(),
+        statement: statement.trim(),
+        difficultyLevel,
+        testCases: testCases.map((tc) => ({
+          input: tc.input,
+          expectedOutput: tc.expectedOutput,
+          type: tc.type,
+        })),
+      };
+
+      const res = await post<any>("/v1/problems", payload);
+      if (res.ok) {
+        toast.success("Coding problem created successfully!");
+        setOpen(false);
+        setTitle("");
+        setStatement("");
+        setDifficultyLevel("EASY");
+        setTestCases([{ id: crypto.randomUUID(), input: "", expectedOutput: "", type: "SAMPLE" }]);
+        // Refresh project data
+        await loadContest();
+      } else {
+        toast.error(res.error || "Failed to create problem");
+      }
+    } catch (err) {
+      toast.error(String(err));
+    } finally {
+      setCreating(false);
+    }
   };
 
   if (!id) return <div>Project not found.</div>;
@@ -83,26 +139,98 @@ export default function ProjectPage() {
             <DialogTrigger asChild>
               <Button>Create Assessment</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>New Assessment</DialogTitle>
+                <DialogTitle>Create Coding Problem</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4">
-                <Input placeholder="Assessment title" value={title} onChange={(e) => setTitle(e.target.value)} />
-                <div>
-                  <label className="text-sm mb-2 block">Type</label>
-                  <Select value={type} onValueChange={(v: AssessmentType) => setType(v)}>
-                    <SelectTrigger><SelectValue placeholder="Choose type" /></SelectTrigger>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Title</label>
+                  <Input 
+                    placeholder="Problem title" 
+                    value={title} 
+                    onChange={(e) => setTitle(e.target.value)} 
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Problem Statement</label>
+                  <Textarea 
+                    placeholder="Describe the problem..." 
+                    value={statement} 
+                    onChange={(e) => setStatement(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Difficulty Level</label>
+                  <Select value={difficultyLevel} onValueChange={setDifficultyLevel}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="mcq">MCQ</SelectItem>
-                      <SelectItem value="essay">Essay</SelectItem>
-                      <SelectItem value="coding">Coding</SelectItem>
+                      <SelectItem value="EASY">Easy</SelectItem>
+                      <SelectItem value="MEDIUM">Medium</SelectItem>
+                      <SelectItem value="HARD">Hard</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="grid gap-3">
+                  <label className="text-sm font-medium">Test Cases</label>
+                  {testCases.map((tc) => (
+                    <div key={tc.id} className="grid grid-cols-1 gap-2 p-3 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">{tc.type}</span>
+                        {testCases.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTestCase(tc.id)}
+                            className="h-6 w-6 p-0"
+                          >
+                            ×
+                          </Button>
+                        )}
+                      </div>
+                      <Input
+                        placeholder="Input"
+                        value={tc.input}
+                        onChange={(e) => updateTestCase(tc.id, { input: e.target.value })}
+                        size={undefined}
+                      />
+                      <Input
+                        placeholder="Expected Output"
+                        value={tc.expectedOutput}
+                        onChange={(e) => updateTestCase(tc.id, { expectedOutput: e.target.value })}
+                        size={undefined}
+                      />
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => addTestCase("SAMPLE")}
+                      className="text-xs"
+                    >
+                      + Add Sample Test
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => addTestCase("HIDDEN")}
+                      className="text-xs"
+                    >
+                      + Add Hidden Test
+                    </Button>
+                  </div>
+                </div>
               </div>
               <DialogFooter>
-                <Button onClick={onCreate}>Create</Button>
+                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button onClick={onCreate} disabled={creating}>
+                  {creating ? "Creating..." : "Create"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

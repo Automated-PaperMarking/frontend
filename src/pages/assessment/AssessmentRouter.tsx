@@ -21,14 +21,9 @@ export default function AssessmentRouter() {
   if (!assessment) return <div>Loading…</div>;
 
   if (role === "teacher") {
-    if (assessment.type === "mcq") return <MCQAssessment />;
-    if (assessment.type === "essay") return <EssayAssessment />;
     return <CodingAssessment />;
   }
-
-  if (role === "student") {
-    if (assessment.type === "mcq") return <MCQAssessment />;
-    if (assessment.type === "essay") return <EssayAssessment />;
+  else {
     return <CodingSubmissionPage />;
   }
 
