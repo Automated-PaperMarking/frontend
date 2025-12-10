@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArchiveX, CalendarDays, Trash2 } from "lucide-react";
+import { ArchiveX, CalendarDays, Delete, Trash2 } from "lucide-react";
 import { del, post } from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -47,9 +47,7 @@ const ProblemCard = ({ problem, onDeleted }: Props) => {
     if (!confirm("Delete this problem? This action cannot be undone.")) return;
     setDeleting(true);
     try {
-      const qs = new URLSearchParams();
-      qs.set("id", problem.id);
-      const res = await del<any>(`/v1/problems?${qs.toString()}`);
+      const res = await del<any>(`/v1/problems/${problem.id}`);
       if (res.ok) {
         toast.success("Problem deleted successfully");
         onDeleted?.(problem.id);
@@ -74,7 +72,7 @@ const ProblemCard = ({ problem, onDeleted }: Props) => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {role !== "student" && (
+            {role == "student" && (
               <Button
                 variant="ghost"
                 size="sm"
