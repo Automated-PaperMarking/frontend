@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutGrid, FolderGit2, MailCheck, User } from "lucide-react";
+import { LogOut, LayoutGrid, FolderGit2, MailCheck, User, LucideMessageCircleQuestion } from "lucide-react";
 import VerifyEmailModal from "@/components/VerifyEmailModal";
 import { auth } from "@/utils/storage";
 
@@ -36,9 +36,9 @@ export default function AppLayout() {
             <LayoutGrid className="h-4 w-4" />
             {open && <span>Dashboard</span>}
           </NavLink>
-          <NavLink to="/dashboard" className={navCls}>
-            <FolderGit2 className="h-4 w-4" />
-            {open && <span>Projects</span>}
+          <NavLink to="/problems" className={navCls}>
+            <LucideMessageCircleQuestion className="h-4 w-4" />
+            {open && <span>Problems</span>}
           </NavLink>
           <NavLink to="/profile" className={navCls}>
             <User className="h-4 w-4" />
