@@ -3,12 +3,11 @@ import { Helmet } from "react-helmet-async";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import CodeEditor from "@/components/Editor";
-import { get } from "@/lib/api";
+import { get, post } from "@/lib/api";
+import { auth } from "@/utils/storage";
 
 interface TestCase {
   id: string;
@@ -29,6 +28,8 @@ interface Problem {
   updatedAt: string;
 }
 
+type SubmissionType = "SAMPLE" | "HIDDEN";
+
 function runJSUserCode(userCode: string, input: string): { ok: boolean; output: string; error?: string } {
   try {
     const fn = new Function(`${userCode}; return typeof solve === 'function' ? solve : null;`);
@@ -44,10 +45,23 @@ function runJSUserCode(userCode: string, input: string): { ok: boolean; output: 
 }
 
 export default function ProblemSubmission() {
-  const { problemId } = useParams<{ problemId: string }>();
+  const { problemId, contestId: contestIdParam } = useParams<{ problemId: string; contestId: string }>();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [code, setCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [code, setCode] = useState(`// Example starter code
+
+function solve(input) {
+  // 1. Convert the input string to a number
+  const number = Number(input);
+
+  // 2. Add 10 and return the result
+  return number + 10;
+
+  // Remove the body of the function and implement your solution here
+}`);
+  const [language, setLanguage] = useState<"javascript" | "python">("javascript");
+  const [submissionType, setSubmissionType] = useState<SubmissionType>("SAMPLE");
 
   useEffect(() => {
     const loadProblem = async () => {
@@ -75,6 +89,7 @@ export default function ProblemSubmission() {
 
   const sampleTests = problem?.testCases.filter(t => t.type === "SAMPLE") || [];
   const hiddenTests = problem?.testCases.filter(t => t.type === "HIDDEN") || [];
+  const contestId = contestIdParam || problem?.contestId || "";
 
   const run = (all = false) => {
     const tests = all ? problem?.testCases : sampleTests;
@@ -84,6 +99,42 @@ export default function ProblemSubmission() {
       return { id: t.id, pass, message: r.error ? `Error: ${r.error}` : pass ? "Passed" : `Expected '${t.expectedOutput}' but got '${r.output}'` };
     });
     return results;
+  };
+
+  const handleSubmit = async () => {
+    if (!problemId || !problem) {
+      toast.error("Problem not found");
+      return;
+    }
+
+    const user = auth.getUser();
+    if (!user?.id) {
+      toast.error("You need to be logged in to submit.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        code,
+        submissionType,
+        language,
+        studentId: user.id,
+        problemId,
+        contestId,
+      };
+
+      const res = await post<any>("/api/submissions", payload);
+      if (res.ok) {
+        toast.success("Submission sent successfully.");
+      } else {
+        toast.error(res.error || "Submission failed");
+      }
+    } catch (err) {
+      toast.error(String(err));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) return <div className="p-6">Loading problem…</div>;
@@ -109,6 +160,33 @@ export default function ProblemSubmission() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground whitespace-pre-wrap">{problem.statement}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Language</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <select
+              className="border rounded-md h-9 px-3 bg-background"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as "javascript" | "python")}
+            >
+              <option value="javascript">JavaScript</option>
+              <option value="python">Python</option>
+            </select>
+
+            {/* <select
+              className="border rounded-md h-9 px-3 bg-background"
+              value={submissionType}
+              onChange={(e) => setSubmissionType(e.target.value as SubmissionType)}
+            >
+              <option value="SAMPLE">SAMPLE (visible tests)</option>
+              <option value="HIDDEN">HIDDEN (all tests)</option>
+            </select> */}
+          </div>
         </CardContent>
       </Card>
 
@@ -157,7 +235,7 @@ export default function ProblemSubmission() {
             }}>
               Run Sample Tests
             </Button>
-            <Button variant="secondary" onClick={() => {
+            {hiddenTests.length > 0 && (<Button onClick={() => {
               const results = run(true);
               const pass = results.every(r => r.pass);
               const message = `${pass ? '✅ All tests passed!' : '❌ Some tests failed'}\n\n${results.map(r => `${r.pass ? '✅' : '❌'} ${r.message}`).join('\n')}`;
@@ -167,6 +245,11 @@ export default function ProblemSubmission() {
                 toast.error(message);
               }
             }}>
+              Run Sample & Hidden Tests
+            </Button>)}
+            <Button variant="secondary" onClick={() => {
+              handleSubmit();
+            }} disabled={submitting}>
               Submit Solution
             </Button>
           </div>

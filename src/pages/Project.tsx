@@ -325,7 +325,7 @@ export default function ProjectPage() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {problems.map((p) => (
-                <ProblemCard key={p.id} problem={p} onDeleted={() => loadProblems()} />
+                <ProblemCard key={p.id} problem={p} contestId={id} onDeleted={() => loadProblems()} />
               ))}
             </div>
           )}
