@@ -98,7 +98,25 @@ export default function ProjectPage() {
 
       const res = await post<any>("/v1/problems", payload);
       if (res.ok) {
-        toast.success("Coding problem created successfully!");
+        // Extract problem ID from response - it's returned directly as a string in data
+        const problemId = res.data?.data || res.data;
+        
+        if (problemId && typeof problemId === 'string') {
+          // Assign problem to contest
+          const assignRes = await post<any>("/v1/contests/assign-problems", {
+            contestId: id,
+            problemIds: [problemId],
+          });
+          
+          if (assignRes.ok) {
+            toast.success("Coding problem created and assigned successfully!");
+          } else {
+            toast.error("Problem created but failed to assign to contest: " + (assignRes.error || "Unknown error"));
+          }
+        } else {
+          toast.error("Problem created but ID not found in response");
+        }
+        
         setOpen(false);
         setTitle("");
         setStatement("");
