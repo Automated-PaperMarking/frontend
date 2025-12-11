@@ -32,6 +32,16 @@ interface Problem {
   updatedAt: string;
 }
 
+interface Contest {
+  id: string;
+  name: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function ProblemCollection() {
   const { id } = useParams<{ id: string }>();
   const [projects, setProjects] = useState<Problem[]>([]);
@@ -46,6 +56,14 @@ export default function ProblemCollection() {
   const [role,setRole] = useState(auth.getUserRole() || "");
   const [searchValue, setSearchValue] = useState("");
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const [contests, setContests] = useState<Contest[]>([]);
+  const [loadingContests, setLoadingContests] = useState(false);
+  const [selectedContest, setSelectedContest] = useState("");
+  const [selectedProblems, setSelectedProblems] = useState<string[]>([]);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
 
   const [statement, setStatement] = useState("");
   const [difficultyLevel, setDifficultyLevel] = useState("EASY");
@@ -139,9 +157,30 @@ export default function ProblemCollection() {
     }
   };
 
+  // Load user contests
+  const loadContests = async () => {
+    setLoadingContests(true);
+    try {
+      const res = await get<any>("/v1/contests/my-contests?page=0&size=100&sort=id&sort=asc");
+      if (res.ok && res.data) {
+        const contestsList = res.data.data?.data || res.data.data || [];
+        setContests(contestsList);
+      } else {
+        setContests([]);
+        toast.error(res.error || "Failed to load contests");
+      }
+    } catch (err) {
+      toast.error(String(err));
+      setContests([]);
+    } finally {
+      setLoadingContests(false);
+    }
+  };
+
   useEffect(() => {
     // Load all Problems on mount
     loadProblems();
+    loadContests();
   }, []);
 
   const addTestCase = (type: "SAMPLE" | "HIDDEN" = "SAMPLE") => {
@@ -200,6 +239,57 @@ export default function ProblemCollection() {
     }
   };
 
+  const onAssignProblems = async () => {
+    if (!selectedContest) {
+      toast.error("Please select a contest");
+      return;
+    }
+    
+    if (selectedProblems.length === 0) {
+      toast.error("Please select at least one problem");
+      return;
+    }
+
+    setAssigning(true);
+    try {
+      const payload = {
+        contestId: selectedContest,
+        problemIds: selectedProblems,
+      };
+
+      const res = await post<any>("/v1/contests/assign-problems", payload);
+      if (res.ok) {
+        toast.success(`${selectedProblems.length} problem(s) assigned to contest successfully!`);
+        setAssignDialogOpen(false);
+        setSelectedContest("");
+        setSelectedProblems([]);
+        setSelectionMode(!selectionMode);
+      } else {
+        toast.error(res.error || "Failed to assign problems");
+      }
+    } catch (err) {
+      toast.error(String(err));
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const toggleProblemSelection = (problemId: string) => {
+    setSelectedProblems(prev => 
+      prev.includes(problemId) 
+        ? prev.filter(id => id !== problemId)
+        : [...prev, problemId]
+    );
+  };
+
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    if (selectionMode) {
+      // Clear selections when exiting selection mode
+      setSelectedProblems([]);
+    }
+  };
+
   return (
     <>
       <Helmet>
@@ -209,16 +299,35 @@ export default function ProblemCollection() {
       </Helmet>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Problems</h1>
-        <div className="relative w-64">
-          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input 
-            placeholder="Search by Problem ID" 
-            value={searchValue} 
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-        {role == "student" && (
+        <div className="flex items-center gap-4">
+          <div className="relative w-64">
+            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input 
+              placeholder="Search by Problem ID" 
+              value={searchValue} 
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          {role !== "student" && contests.length > 0 && (
+            <>
+              <Button 
+                variant="outline"
+                onClick={toggleSelectionMode}
+              >
+                {selectionMode ? "Cancel Selection" : "Select Problems"}
+              </Button>
+              {selectionMode && selectedProblems.length > 0 && (
+                <Button 
+                  variant="default"
+                  onClick={() => setAssignDialogOpen(true)}
+                >
+                  Assign to Contest ({selectedProblems.length})
+                </Button>
+              )}
+            </>
+          )}
+          {role !== "student" && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>Create Problem</Button>
@@ -318,14 +427,57 @@ export default function ProblemCollection() {
               </DialogFooter>
             </DialogContent>
           </Dialog>)}
+        </div>
       </div>
+
+      {/* Assign Problems to Contest Dialog */}
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Problems to Contest</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Select Contest</label>
+              <Select value={selectedContest} onValueChange={setSelectedContest}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a contest" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contests.map((contest) => (
+                    <SelectItem key={contest.id} value={contest.id}>
+                      {contest.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {selectedProblems.length} problem(s) selected
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>Cancel</Button>
+            <Button onClick={onAssignProblems} disabled={assigning || !selectedContest}>
+              {assigning ? "Assigning..." : "Assign"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {projects.length === 0 ? (
         <div className="text-muted-foreground">No problems yet. {role !== "student" && "Create your first problem."}</div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
-            <ProblemCard key={p.id} problem={p} onDeleted={() => loadProblems()} />
+            <ProblemCard 
+              key={p.id} 
+              problem={p} 
+              onDeleted={() => loadProblems()}
+              selectionMode={selectionMode && role !== "student" && contests.length > 0}
+              isSelected={selectedProblems.includes(p.id)}
+              onSelectionChange={toggleProblemSelection}
+            />
           ))}
         </div>
       )}
