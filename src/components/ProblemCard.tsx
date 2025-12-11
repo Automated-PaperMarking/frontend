@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArchiveX, CalendarDays, Delete, Trash2, Eye } from "lucide-react";
 import { del, post } from "@/lib/api";
 import { toast } from "sonner";
@@ -31,9 +32,12 @@ interface Props {
   problem: Problem;
   onDeleted?: (id: string) => void;
   contestId?: string;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onSelectionChange?: (id: string, selected: boolean) => void;
 }
 
-const ProblemCard = ({ problem, onDeleted, contestId }: Props) => {
+const ProblemCard = ({ problem, onDeleted, contestId, selectionMode, isSelected, onSelectionChange }: Props) => {
   const [deleting, setDeleting] = React.useState(false);
   const navigate = useNavigate();
   const createdAt = format(new Date(problem.createdAt), "PPpp");
@@ -60,37 +64,47 @@ const ProblemCard = ({ problem, onDeleted, contestId }: Props) => {
   };
 
   return (
-    <Card className="transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <Card className={`transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md ${selectionMode && isSelected ? 'ring-2 ring-primary' : ''}`}>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
+          {selectionMode && (
+            <div className="mr-3">
+              <Checkbox 
+                checked={isSelected} 
+                onCheckedChange={(checked) => onSelectionChange?.(problem.id, checked === true)}
+              />
+            </div>
+          )}
           <div className="flex-1">
             <h3 className="font-semibold">{problem.title}</h3>
             <p className="text-xs text-muted-foreground mt-1">
               <span className="inline-block bg-slate-100 px-2 py-1 rounded">{problem.difficultyLevel}</span>
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/problem-submission/${resolvedContestId}/${problem.id}`)}
-              className="h-8"
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              View
-            </Button>
-            {role !== "student" && (
+          {!selectionMode && (
+            <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={onDelete}
-                disabled={deleting}
-                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                onClick={() => navigate(`/problem-submission/${resolvedContestId}/${problem.id}`)}
+                className="h-8"
               >
-                <Trash2 className="h-4 w-4" />
+                <Eye className="h-4 w-4 mr-1" />
+                View
               </Button>
-            )}
-          </div>
+              {role !== "student" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onDelete}
+                  disabled={deleting}
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
