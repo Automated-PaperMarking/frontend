@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { get } from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Search, Trophy, Zap } from "lucide-react";
+import { Search, Trophy, Zap, Download } from "lucide-react";
 
 interface LeaderboardEntry {
   id: string;
@@ -87,6 +87,42 @@ export default function Leaderboard({ contestId }: Props) {
     return "";
   };
 
+  const exportToCSV = () => {
+    if (entries.length === 0) {
+      toast.error("No leaderboard data to export");
+      return;
+    }
+
+    const escapeCSV = (value: string | number) => {
+      const stringValue = String(value ?? "");
+      if (/[",\n]/.test(stringValue)) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    const header = ["Rank", "Student Name", "Score", "Problems Solved", "Last Submission"];
+    const rows = entries.map((entry) => [
+      entry.rank,
+      entry.studentName,
+      entry.totalScore.toFixed(1),
+      entry.problemsSolved,
+      format(new Date(entry.lastSubmissionTime), "yyyy-MM-dd HH:mm"),
+    ]);
+
+    const csv = [header, ...rows]
+      .map((row) => row.map(escapeCSV).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `leaderboard-${contestId}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -99,6 +135,10 @@ export default function Leaderboard({ contestId }: Props) {
             className="pl-8"
           />
         </div>
+        <Button variant="outline" onClick={exportToCSV} disabled={loading || entries.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
       </div>
 
       <Card>
