@@ -217,7 +217,7 @@ export default function Dashboard() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        )} : 
+        )} 
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>New Enrollment</Button>
