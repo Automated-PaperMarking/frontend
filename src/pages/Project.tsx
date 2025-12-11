@@ -42,6 +42,11 @@ export default function ProjectPage() {
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   
+  // Selection mode states
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedProblems, setSelectedProblems] = useState<Set<string>>(new Set());
+  const [removing, setRemoving] = useState(false);
+  
   // Enrollment states
   const [openEnroll, setOpenEnroll] = useState(false);
   const [enrollmentKey, setEnrollmentKey] = useState("");
@@ -122,6 +127,68 @@ export default function ProjectPage() {
 
   const createdAt = useMemo(() => (project ? format(new Date(project.createdAt || project.startTime ||  Date.now()), "PPpp") : ""), [project]);
   const updatedAt = useMemo(() => (project && project.updatedAt ? format(new Date(project.updatedAt), "PPpp") : ""), [project]);
+
+  const handleSelectionChange = (problemId: string, selected: boolean) => {
+    setSelectedProblems(prev => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(problemId);
+      } else {
+        newSet.delete(problemId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    if (selectionMode) {
+      // Clear selections when exiting selection mode
+      setSelectedProblems(new Set());
+    }
+  };
+
+  const selectAll = () => {
+    setSelectedProblems(new Set(problems.map(p => p.id)));
+  };
+
+  const deselectAll = () => {
+    setSelectedProblems(new Set());
+  };
+
+  const onRemoveProblems = async () => {
+    if (selectedProblems.size === 0) {
+      toast.error("Please select at least one problem to remove");
+      return;
+    }
+
+    if (!confirm(`Remove ${selectedProblems.size} problem(s) from this contest? This will unassign them but not delete them.`)) {
+      return;
+    }
+
+    setRemoving(true);
+    try {
+      const payload = {
+        contestId: id,
+        problemIds: Array.from(selectedProblems),
+      };
+
+      const res = await post<any>("/v1/contests/remove-problems", payload);
+      if (res.ok) {
+        toast.success(`Successfully removed ${selectedProblems.size} problem(s) from the contest`);
+        setSelectedProblems(new Set());
+        setSelectionMode(false);
+        // Reload problems after removal
+        await loadProblems();
+      } else {
+        toast.error(res.error || "Failed to remove problems from contest");
+      }
+    } catch (err) {
+      toast.error(String(err));
+    } finally {
+      setRemoving(false);
+    }
+  };
 
   const onEnroll = async () => {
     if (!id || !enrollmentKey.trim()) {
@@ -355,7 +422,38 @@ export default function ProjectPage() {
           </TabsList>
 
           <TabsContent value="problems" className="space-y-4">
-            <h2 className="text-xl font-bold">Problems</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">Problems</h2>
+              {!notEnrolled && problems.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {selectionMode ? (
+                    <>
+                      <Button variant="outline" size="sm" onClick={selectAll}>
+                        Select All
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={deselectAll}>
+                        Deselect All
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={onRemoveProblems}
+                        disabled={selectedProblems.size === 0 || removing}
+                      >
+                        {removing ? "Removing..." : `Remove (${selectedProblems.size})`}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={toggleSelectionMode}>
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={toggleSelectionMode}>
+                      Select Problems
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
             {notEnrolled ? (
               <div className="flex flex-col items-center justify-center gap-4 py-8">
                 <p className="text-muted-foreground">You are not enrolled in this contest.</p>
@@ -390,7 +488,15 @@ export default function ProjectPage() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {problems.map((p) => (
-                  <ProblemCard key={p.id} problem={p} contestId={id} onDeleted={() => loadProblems()} />
+                  <ProblemCard 
+                    key={p.id} 
+                    problem={p} 
+                    contestId={id} 
+                    onDeleted={() => loadProblems()}
+                    selectionMode={selectionMode}
+                    isSelected={selectedProblems.has(p.id)}
+                    onSelectionChange={handleSelectionChange}
+                  />
                 ))}
               </div>
             )}
