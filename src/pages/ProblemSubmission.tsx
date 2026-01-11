@@ -230,8 +230,13 @@ function solve(input) {
           <div className="flex gap-3">
             <Button onClick={() => {
               const results = run(false);
+              const pass = results.every((r) => r.pass);
               const message = results.map(r => `${r.pass ? '✅' : '❌'} ${r.message}`).join('\n');
-              toast.success(message);
+              if (pass) {
+                toast.success(<div className="whitespace-pre-wrap">{message}</div>);
+              } else {
+                toast.error(<div className="whitespace-pre-wrap">{message}</div>);
+              }
             }}>
               Run Sample Tests
             </Button>
@@ -240,9 +245,9 @@ function solve(input) {
               const pass = results.every(r => r.pass);
               const message = `${pass ? '✅ All tests passed!' : '❌ Some tests failed'}\n\n${results.map(r => `${r.pass ? '✅' : '❌'} ${r.message}`).join('\n')}`;
               if (pass) {
-                toast.success(message);
+                toast.success(<div className="whitespace-pre-wrap">{message}</div>);
               } else {
-                toast.error(message);
+                toast.error(<div className="whitespace-pre-wrap">{message}</div>);
               }
             }}>
               Run Sample & Hidden Tests
