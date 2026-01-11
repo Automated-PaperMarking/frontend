@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,23 @@ function runJSUserCode(userCode: string, input: string): { ok: boolean; output: 
   }
 }
 
+interface SubmissionResult {
+  id: string;
+  code: string;
+  submissionType: string;
+  language: string;
+  studentId: string;
+  problemId: string;
+  understandingLogic: number;
+  correctnessScore: number;
+  readabilityScore: number;
+  totalScore: number;
+  comment: string;
+  gradingResultStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function ProblemSubmission() {
   const { problemId, contestId: contestIdParam } = useParams<{ problemId: string; contestId: string }>();
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -60,6 +77,9 @@ function solve(input) {
 
   // Remove the body of the function and implement your solution here
 }`);
+    const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
+    const [polling, setPolling] = useState(false);
+    const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const [language, setLanguage] = useState<"javascript" | "python">("javascript");
   const [submissionType, setSubmissionType] = useState<SubmissionType>("SAMPLE");
 
@@ -114,6 +134,7 @@ function solve(input) {
     }
 
     setSubmitting(true);
+    setSubmissionResult(null);
     try {
       const payload = {
         code,
@@ -125,8 +146,28 @@ function solve(input) {
       };
 
       const res = await post<any>("/api/submissions", payload);
-      if (res.ok) {
-        toast.success("Submission sent successfully.");
+      if (res.ok && res.data && res.data.message) {
+        toast.success("Submission sent successfully. Grading in progress...");
+        const submissionId = res.data.message;
+        setPolling(true);
+        // Start polling every 5 seconds
+        const poll = async () => {
+          const result = await get<any>(`/api/submissions/${submissionId}`);
+          if (result.ok && result.data && result.data.code === "200") {
+            setSubmissionResult(result.data.data);
+            // If status is COMPLETED, stop polling. If PENDING, continue polling.
+            if (result.data.data.gradingResultStatus === "COMPLETED") {
+              setPolling(false);
+              if (pollingRef.current) clearTimeout(pollingRef.current);
+              toast.success("Grading completed.");
+            } else if (result.data.data.gradingResultStatus === "PENDING") {
+              pollingRef.current = setTimeout(poll, 5000);
+            }
+          } else if (polling) {
+            pollingRef.current = setTimeout(poll, 5000);
+          }
+        };
+        poll();
       } else {
         toast.error(res.error || "Submission failed");
       }
@@ -136,6 +177,13 @@ function solve(input) {
       setSubmitting(false);
     }
   };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearTimeout(pollingRef.current);
+    };
+  }, []);
 
   if (loading) return <div className="p-6">Loading problem…</div>;
   if (!problem) return <div className="p-6">Problem not found.</div>;
@@ -252,14 +300,71 @@ function solve(input) {
             }}>
               Run Sample & Hidden Tests
             </Button>)}
-            <Button variant="secondary" onClick={() => {
-              handleSubmit();
-            }} disabled={submitting}>
-              Submit Solution
+            <Button
+              variant="secondary"
+              onClick={() => { handleSubmit(); }}
+              disabled={submitting || polling}
+            >
+              {polling ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                  Grading...
+                </span>
+              ) : "Submit Solution"}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Show grading result if available */}
+      {submissionResult && (
+        <Card className="border-2 border-blue-400 shadow-lg">
+          <CardHeader className="bg-blue-50 rounded-t-lg">
+            <CardTitle className="flex items-center gap-2 text-blue-700">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2l4-4" /></svg>
+              Submission Result
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${submissionResult.gradingResultStatus === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{submissionResult.gradingResultStatus}</span>
+                </div>
+                <div className="flex items-center gap-2 text-lg font-bold">
+                  <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                  Total Score: <span className="ml-2 text-blue-700">{submissionResult.totalScore}</span>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <span className="text-green-600 font-semibold text-lg">{submissionResult.correctnessScore}</span>
+                    <span className="text-xs text-gray-500">Correctness</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-purple-600 font-semibold text-lg">{submissionResult.readabilityScore}</span>
+                    <span className="text-xs text-gray-500">Readability</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-orange-600 font-semibold text-lg">{submissionResult.understandingLogic}</span>
+                    <span className="text-xs text-gray-500">Understanding</span>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <span className="block text-xs font-semibold text-gray-600 mb-1">Comment</span>
+                  <div className="bg-gray-50 border border-gray-200 rounded p-2 text-sm min-h-[32px]">{submissionResult.comment || <span className="text-gray-400">No comment</span>}</div>
+                </div>
+              </div>
+              <div>
+                <span className="block text-xs font-semibold text-gray-600 mb-1">Submitted Code</span>
+                <pre className="bg-slate-100 border border-slate-200 rounded p-3 text-sm overflow-x-auto whitespace-pre-wrap max-h-64">{submissionResult.code}</pre>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {hiddenTests.length > 0 && (
         <Card>
